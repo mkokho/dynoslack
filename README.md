@@ -1,4 +1,6 @@
 # dynoslack
-The file contains overview of the project
+The file contains overview of the project.
 
-We've done a hotfix
+The project structure:
+
+- EDF scheduling
