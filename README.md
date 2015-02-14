@@ -1,6 +1,3 @@
 # dynoslack
-The file contains overview of the project.
 
-The project structure:
-
-- EDF scheduling
+The goal of the project is to implement some of real-time scheduling algorithms and compare their perfomance.
