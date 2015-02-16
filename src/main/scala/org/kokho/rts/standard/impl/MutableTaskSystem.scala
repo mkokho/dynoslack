@@ -1,6 +1,6 @@
-package main.scala.org.kokho.rts.impl
+package main.scala.org.kokho.rts.standard.impl
 
-import main.scala.org.kokho.rts.model.{Task, TaskSystem}
+import main.scala.org.kokho.rts.standard.model.{Task, TaskSystem}
 import scala.collection.SetLike
 import scala.collection.mutable
 import scala.collection

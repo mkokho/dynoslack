@@ -1,4 +1,4 @@
-package main.scala.org.kokho.rts.model
+package main.scala.org.kokho.rts.standard.model
 
 /**
  * Created with IntelliJ IDEA on 11/11/14.

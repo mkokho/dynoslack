@@ -1,6 +1,6 @@
-package main.scala.org.kokho.rts.impl
+package main.scala.org.kokho.rts.standard.impl
 
-import main.scala.org.kokho.rts.model.{PeriodicTask, Task, SynchronousTask, ImplicitDeadlineTask}
+import main.scala.org.kokho.rts.standard.model.{PeriodicTask, Task, SynchronousTask, ImplicitDeadlineTask}
 
 /**
  * @author Mikhail Kokho

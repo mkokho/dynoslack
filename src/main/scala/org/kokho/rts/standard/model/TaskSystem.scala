@@ -1,4 +1,4 @@
-package main.scala.org.kokho.rts.model
+package main.scala.org.kokho.rts.standard.model
 
 import main.scala.org.kokho.rts.utils.Math.lcm
 import scala.collection.Set

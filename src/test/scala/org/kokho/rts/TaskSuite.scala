@@ -1,8 +1,8 @@
 package test.scala.org.kokho.rts
 
 import org.scalatest.FunSuite
-import main.scala.org.kokho.rts.model.{TaskSystem, Task}
-import main.scala.org.kokho.rts.impl.{EdfScheduler, ImmutableTaskSystem, BasicTask}
+import main.scala.org.kokho.rts.standard.model.{TaskSystem, Task}
+import main.scala.org.kokho.rts.standard.impl.{EdfScheduler, ImmutableTaskSystem, BasicTask}
 
 import scala.reflect.runtime.universe._
 

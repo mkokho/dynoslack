@@ -15,7 +15,7 @@ object Math {
   def lcm(xs: Iterator[Int]): Int = foldInts(xs, lcm)
 
   private def foldInts(ints: Iterator[Int], f: (Int, Int) => Int ) = {
-    if (ints.isEmpty) throw new IllegalArgumentException("Collection must not be empty")
+    require(ints.nonEmpty, "Collection must not be empty")
 
     ints.fold(ints.next())(f)
   }

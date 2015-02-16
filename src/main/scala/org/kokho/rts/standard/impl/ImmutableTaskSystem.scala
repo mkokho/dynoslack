@@ -1,6 +1,6 @@
-package main.scala.org.kokho.rts.impl
+package main.scala.org.kokho.rts.standard.impl
 
-import main.scala.org.kokho.rts.model.{TaskSystem, Task}
+import main.scala.org.kokho.rts.standard.model.{TaskSystem, Task}
 import scala.collection.{SetLike, immutable}
 
 /**

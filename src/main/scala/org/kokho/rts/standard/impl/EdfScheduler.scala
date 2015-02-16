@@ -1,6 +1,6 @@
-package main.scala.org.kokho.rts.impl
+package main.scala.org.kokho.rts.standard.impl
 
-import main.scala.org.kokho.rts.model._
+import main.scala.org.kokho.rts.standard.model._
 import scala.collection.mutable
 import scala.Some
 import scala.collection.immutable.{Stack, Queue}
