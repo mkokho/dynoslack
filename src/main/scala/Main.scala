@@ -12,11 +12,11 @@ object Main {
   def main(args: Array[String]) = {
 
     val system:TaskSystem[BasicTask] = ImmutableTaskSystem[BasicTask]() +
-      BasicTask("A", 4, 9) +
-      BasicTask("B", 3, 6)
+      BasicTask("A", 2, 5) +
+      BasicTask("B", 9, 16)
 
 
-    print(EdfScheduler.drawSchedule(EdfScheduler.schedule(system), 50))
+    print(EdfScheduler.drawSchedule(EdfScheduler.schedule(system), 20))
   }
 
 

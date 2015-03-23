@@ -34,8 +34,8 @@ trait EdfScheduler extends SuiteMixin { this: Suite =>
 trait TwoTaskSystem extends SuiteMixin { this: Suite =>
 
   val system:TaskSystem[BasicTask] = ImmutableTaskSystem[BasicTask]() +
-          BasicTask("A", 4, 9) +
-          BasicTask("B", 3, 6)
+          BasicTask("A", 2, 5) +
+          BasicTask("B", 9, 16)
 }
 
 

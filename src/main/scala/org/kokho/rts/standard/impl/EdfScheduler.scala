@@ -23,13 +23,17 @@ object EdfScheduler extends Scheduler{
     def releaseJobs(t:Int) = {
       var res = List[ActiveJob]()
       while(jobs.head.release <= t) res ::= new ActiveJob(jobs.next())
-      res.sortWith(_.deadline < _.deadline)
+      //println("Releasing jobs at time " + t)
+      //println("Results: " + res.mkString(" "))
+      res
     }
 
     var queue = List[ActiveJob]()
 
     val itr:BufferedIterator[Job] = Iterator.from(0).map(t => {
-      queue = merge(queue, releaseJobs(t)).dropWhile(_.remaining == 0)
+      queue = merge(queue, releaseJobs(t)).dropWhile(_.remaining == 0).sortWith(_.deadline < _.deadline)
+//      println("Scheduling jobs at time " + t)
+//      println("Queue: " + queue.mkString(" "))
 //      print(t + " ")
 //      println(queue)
       if (queue.nonEmpty) {
