@@ -19,7 +19,7 @@ object IdleJob extends Job {
   val execution: Int = 0
   val release: Int = 0
 
-  override def toString: String = "IdleJob"
+  override def toString: String = "IJ"
 }
 
 
