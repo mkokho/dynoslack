@@ -14,9 +14,7 @@ final case class ActiveJob(job: Job, remaining: Int) extends Job {
   def execution = job.execution
   def deadline = job.deadline
 
-  def execute(t: Int) = job match {
-    case _ => ActiveJob(job, remaining - t)
-  }
+  def execute(t: Int) =  ActiveJob(job, remaining - t)
 
   override def toString: String = "ActiveJob(" + job.toString + ", " + remaining + ")"
 }
