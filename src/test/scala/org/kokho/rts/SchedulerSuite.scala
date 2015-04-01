@@ -1,8 +1,10 @@
 package test.scala.org.kokho.rts
 
+import main.scala.org.kokho.rts.standard.impl.tasks.BasicTask
+import main.scala.org.kokho.rts.standard.impl.tasksystems.ImmutableTaskSystem
 import org.scalatest.{Suite, SuiteMixin, FunSuite}
 import main.scala.org.kokho.rts.standard.model._
-import main.scala.org.kokho.rts.standard.impl.{BasicTask, ImmutableTaskSystem, EdfScheduler}
+import main.scala.org.kokho.rts.standard.impl.EdfScheduler
 
 /**
  * @author Mikhail Kokho

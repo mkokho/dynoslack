@@ -1,4 +1,4 @@
-package main.scala.org.kokho.rts.standard.impl
+package main.scala.org.kokho.rts.standard.impl.jobs
 
 import main.scala.org.kokho.rts.standard.model.Job
 

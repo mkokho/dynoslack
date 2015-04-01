@@ -1,5 +1,6 @@
 package main.scala.org.kokho.rts.standard.impl
 
+import main.scala.org.kokho.rts.standard.impl.jobs.ActiveJob
 import main.scala.org.kokho.rts.standard.model._
 import scala.collection.mutable
 import scala.Some

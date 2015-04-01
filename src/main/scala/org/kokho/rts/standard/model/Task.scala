@@ -1,6 +1,6 @@
 package main.scala.org.kokho.rts.standard.model
 
-import main.scala.org.kokho.rts.standard.impl.PeriodicJob
+import main.scala.org.kokho.rts.standard.impl.jobs.PeriodicJob
 
 /**
  * Created with IntelliJ IDEA on 11/11/14.

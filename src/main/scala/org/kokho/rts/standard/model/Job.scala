@@ -11,7 +11,9 @@ trait Job{
   def execution: Int
   def deadline: Int
 
-  override def toString: String = super.toString
+  def task:Option[Task] = None
+
+  override def toString: String = "Job(" + execution + "->" + release + ":" + deadline + ")"
 }
 
 object IdleJob extends Job {

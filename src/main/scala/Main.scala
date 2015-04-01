@@ -1,6 +1,8 @@
 package main.scala
 
-import main.scala.org.kokho.rts.standard.impl.{EdfScheduler, ImmutableTaskSystem, BasicTask}
+import main.scala.org.kokho.rts.standard.impl.tasks.BasicTask
+import main.scala.org.kokho.rts.standard.impl.tasksystems.ImmutableTaskSystem
+import main.scala.org.kokho.rts.standard.impl.EdfScheduler
 import main.scala.org.kokho.rts.standard.model.{TaskSystem, Job}
 import EdfScheduler.Schedule
 
@@ -50,27 +52,17 @@ Output: we run SlackAvailability(C_1, 30) at different moments of time. Recall t
     EdfScheduler.schedule(system)
   }
 
+
+
   private def testCase2 = {
     val system1 = ImmutableTaskSystem[BasicTask]() +
-      BasicTask("A", 4, 9) +
-      BasicTask("B", 7, 13)
+      BasicTask("A", 5, 11) +
+      BasicTask("B", 3, 12) +
+      BasicTask("C", 4, 14)
 
     val system2 = ImmutableTaskSystem[BasicTask]() +
-      BasicTask("D", 6, 13) +
-      BasicTask("C", 4, 10)
-
-    List(system1, system2).map(EdfScheduler.schedule)
-  }
-
-  private def testCase3 = {
-    val system1 = ImmutableTaskSystem[BasicTask]() +
-      BasicTask("A", 18, 32) +
-      BasicTask("B", 4, 10)
-
-    val system2 = ImmutableTaskSystem[BasicTask]() +
-      BasicTask("E", 4, 19) +
-      BasicTask("D", 6, 13) +
-      BasicTask("C", 2, 10)
+      BasicTask("D", 6, 11) +
+      BasicTask("X", 4, 10)
 
     List(system1, system2).map(EdfScheduler.schedule)
   }
@@ -81,7 +73,7 @@ Output: we run SlackAvailability(C_1, 30) at different moments of time. Recall t
     val schedule = testCase2
 
 
-    print(EdfScheduler.drawSchedule(schedule, 50))
+    println(EdfScheduler.drawSchedule(schedule, 0, 22))
   }
 
 

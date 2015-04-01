@@ -1,8 +1,8 @@
 package test.scala.org.kokho.rts
 
+import main.scala.org.kokho.rts.standard.impl.tasks.BasicTask
 import org.scalatest.FlatSpec
 import main.scala.org.kokho.rts.standard.model.Task
-import main.scala.org.kokho.rts.standard.impl.BasicTask
 
 /**
  * @author Mikhail Kokho

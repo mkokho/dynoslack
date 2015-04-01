@@ -12,50 +12,61 @@ trait Scheduler {
 
   def drawSchedule(sList:List[Schedule], limit: Int):String = sList.map(drawSchedule(_, limit)).mkString("\n\n")
 
-  def drawSchedule(s: Schedule, limit: Int):String = {
-    val allocation = s.takeWhile(_.from < limit).toList
+  def drawSchedule(sList:List[Schedule], from:Int, to: Int):String = sList.map(drawSchedule(_, from, to)).mkString("\n\n")
 
-    val res = new StringBuilder(limit*2+3)
+  def drawSchedule(s: Schedule, to: Int):String = drawSchedule(s, 0, to)
+
+
+  def drawSchedule(s: Schedule, from:Int, to: Int):String = {
+    val allocation = s.takeWhile(_.from < to).toList
+
+
+    val sbJobs = new StringBuilder(2*to)
+    val sbIntervals = new StringBuilder(2*to)
+    val sbTicks = new StringBuilder(2*to)
+
     for (a <- allocation) {
       val name = a.job.toString
-      res ++= " " * (a.length - 1)
-      res ++= name
-      res ++= " " * (a.length + 1 - name.length)
+      sbJobs ++= " " * (a.length - 1)
+      sbJobs ++= name
+      sbJobs ++= " " * (a.length + 1 - name.length)
     }
-    res += '\n'
 
     for (a <- allocation){
       if (a.from == a.job.release)
-        res ++= "↓_"
+        sbIntervals ++= "↓_"
       else
-        res ++= "|_"
-      res ++= " _"  * (a.length - 1)
+        sbIntervals ++= "|_"
+      sbIntervals ++= " _"  * (a.length - 1)
     }
-    res += '\n'
 
-    for (t <- Range(0, limit, 1)){
+    for (t <- Range(0, to, 1)){
       if (t % 10 == 0 && t != 0){
-        res ++= t.toString
+        if (t >= 100) {
+          sbTicks ++= t.toString.drop(1)
+        }else{
+          sbTicks ++= t.toString
+        }
       }else if (t % 10 == 1 && t != 1){
-        res ++= "  "
+        sbTicks ++= "  "
       } else{
         if (t % 2 == 0) {
-          res ++= (t % 10).toString
-          res += ' '
+          sbTicks ++= (t % 10).toString
+          sbTicks += ' '
         }else
-          res ++= ". "
+          sbTicks ++= ". "
       }
     }
 
 //    res ++= "\n" + allocation.mkString(", ")
 
-    res.toString()
+    List(sbJobs, sbIntervals, sbTicks).map(_.toString().take(2*to).drop(2*from)).mkString("\n")
   }
 
 }
 
 case class Allocation(from: Int, to: Int, job: Job) {
-  require(to > from, "Allocation must have from greater than to")
+  require(to > from, "Allocation must have 'from' greater than 'to'")
 
   def length = to - from
 

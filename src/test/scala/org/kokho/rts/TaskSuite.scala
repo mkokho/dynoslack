@@ -1,8 +1,10 @@
 package test.scala.org.kokho.rts
 
+import main.scala.org.kokho.rts.standard.impl.tasks.BasicTask
+import main.scala.org.kokho.rts.standard.impl.tasksystems.ImmutableTaskSystem
 import org.scalatest.FunSuite
 import main.scala.org.kokho.rts.standard.model.{TaskSystem, Task}
-import main.scala.org.kokho.rts.standard.impl.{EdfScheduler, ImmutableTaskSystem, BasicTask}
+import main.scala.org.kokho.rts.standard.impl.EdfScheduler
 
 import scala.reflect.runtime.universe._
 
@@ -44,7 +46,7 @@ class TaskSuite extends FunSuite{
       val jobs = system.jobs().takeWhile(_.release < system.hyperPeriod).
         toList.groupBy(_.toString.charAt(0))
 
-      assert(jobs.values.forall(jList => jList.size == system.hyperPeriod / jList(0).task.period))
+      assert(jobs.values.forall(jList => jList.size == system.hyperPeriod / jList(0).task.get.period))
 
     }
 
