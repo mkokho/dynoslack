@@ -15,7 +15,6 @@ final case class ActiveJob(job: Job, remaining: Int) extends Job {
   def deadline = job.deadline
 
   def execute(t: Int) = job match {
-    case j:
     case _ => ActiveJob(job, remaining - t)
   }
 
