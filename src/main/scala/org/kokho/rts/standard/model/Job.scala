@@ -23,32 +23,9 @@ object IdleJob extends Job {
 }
 
 
-/**
- * A job of a periodic task. Given index and the task, we compute other parameters
- * @param idx - index of a job. Must be greater or equal to 0
- * @param task - task that releases this job
- */
-final case class PeriodicJob(idx: Int, task: Task) extends Job {
 
-  val release = task.offset + idx*task.period
-  val execution = task.execution
-  val deadline = release + task.period
 
-  override def toString: String = task.name + idx
-}
 
-final case class ActiveJob(job: Job, remaining: Int) extends Job {
-
-  def this(job: Job) = this(job, job.execution)
-
-  def release = job.release
-  def execution = job.execution
-  def deadline = job.deadline
-
-  def execute(t: Int) = ActiveJob(job, remaining - t)
-
-  override def toString: String = "ActiveJob(" + job.toString + ", " + remaining + ")"
-}
 
 /*
 case class Job(idx: Int, task: Task) {

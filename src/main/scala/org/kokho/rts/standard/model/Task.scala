@@ -1,5 +1,7 @@
 package main.scala.org.kokho.rts.standard.model
 
+import main.scala.org.kokho.rts.standard.impl.PeriodicJob
+
 /**
  * Created with IntelliJ IDEA on 11/11/14.
  * @author: Mikhail Kokho
@@ -24,7 +26,7 @@ trait Task{
   def deadline: Int
   def period: Int
 
-  final def utilization:Double = execution / deadline
+  final def utilization:Double = execution.toDouble / deadline
 
   /*
   //deadline is not overriden here by ImplicitDeadlineTask

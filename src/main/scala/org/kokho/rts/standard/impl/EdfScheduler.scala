@@ -9,7 +9,10 @@ import scala.collection.immutable.{Stack, Queue}
  * @author Mikhail Kokho
  */
 object EdfScheduler extends Scheduler{
+
   override def schedule[T <: Task](ts: TaskSystem[T]): Schedule = {
+    require(ts.utilization <= 1, "Task system " + ts.mkString(",") + " has utilization greater than 1")
+
 
     def merge[J <: Job](xs: List[J], ys: List[J]):List[J] = (xs, ys) match {
       case (_, Nil) => xs

@@ -9,8 +9,6 @@ class BasicTask private (override val name:String, val execution: Int, val perio
   extends Task
   with SynchronousTask with ImplicitDeadlineTask with PeriodicTask{
 
-
-
 }
 
 object BasicTask {
