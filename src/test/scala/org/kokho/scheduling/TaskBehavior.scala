@@ -1,5 +1,6 @@
 package org.kokho.scheduling
 
+import org.kokho.scheduling.rts.multicritical.{HiCriticalTask, HiCriticalJob}
 import org.scalatest.FlatSpec
 
 /**
@@ -20,6 +21,10 @@ trait TaskBehavior {
       assert(task.offset >= 0)
     }
 
+    it must "have utilization equal to execution/period" in {
+      assert(task.utilization == (task.execution.toDouble / task.deadline))
+    }
+
     it must "produce non empty sequence of jobs" in {
       assert(task.jobs().nonEmpty)
     }
@@ -29,7 +34,7 @@ trait TaskBehavior {
       val j1 = jobs.next()
       val j2 = jobs.next()
 
-      assert(j2.release >= j1.release + task.period, "Second Job must be released no eralier than T.p units of time")
+      assert(j2.release >= j1.release + task.period, "Second Job must be released no earlier than T.p units of time")
     }
 
     it must "release the first job at the moment offset" in {

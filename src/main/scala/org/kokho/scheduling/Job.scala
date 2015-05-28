@@ -15,13 +15,13 @@ trait Job {
 }
 
 object Job {
-  def apply(release: Int, length: Int, deadline: Int) = new Job {
+  def apply(release_ : Int, length_ : Int, deadline_ : Int) = new Job {
 
-    override def length: Int = length
+    override def length: Int = length_
 
-    override def deadline: Int = deadline
+    override def deadline: Int = deadline_
 
-    override def release: Int = release
+    override def release: Int = release_
   }
 }
 

@@ -6,11 +6,8 @@ import org.kokho.scheduling._
  * Created with IntelliJ IDEA on 5/28/15.
  * @author: Mikhail Kokho
  */
-class HiCriticalTask (val period:Int, val loExecution:Int, val hiExecution: Int) extends Task
-with SynchronousTask
-with ImplicitDeadlineTask
-with PeriodicTask
-{
+class HiCriticalTask (val period:Int, val loExecution:Int, val hiExecution: Int) extends MulticriticalTask{
+
   override type JobType = HiCriticalJob
 
   override def execution: Int = hiExecution

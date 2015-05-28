@@ -1,17 +1,17 @@
-package main.scala
+package org.kokho.rts
 
+import main.scala.org.kokho.rts.standard.impl.EdfScheduler
+import main.scala.org.kokho.rts.standard.impl.EdfScheduler.Schedule
 import main.scala.org.kokho.rts.standard.impl.tasks.BasicTask
 import main.scala.org.kokho.rts.standard.impl.tasksystems.ImmutableTaskSystem
-import main.scala.org.kokho.rts.standard.impl.EdfScheduler
-import main.scala.org.kokho.rts.standard.model.{TaskSystem, Job}
-import EdfScheduler.Schedule
+import main.scala.org.kokho.rts.standard.model.TaskSystem
 
 
 /**
  * Created with IntelliJ IDEA on 11/11/14.
  * @author: Mikhail Kokho
  */
-object Main {
+object SomeTestCases {
 
   /** Test Case 1
 
@@ -66,16 +66,6 @@ Output: we run SlackAvailability(C_1, 30) at different moments of time. Recall t
 
     List(system1, system2).map(EdfScheduler.schedule)
   }
-
-  def main(args: Array[String]) = {
-
-//    val schedule = testCase1
-    val schedule = testCase2
-
-
-    println(EdfScheduler.drawSchedule(schedule, 0, 22))
-  }
-
 
 }
 

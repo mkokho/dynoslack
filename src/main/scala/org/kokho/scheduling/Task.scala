@@ -81,9 +81,8 @@ trait PeriodicTask extends Task {
     Iterator.iterate(start)(_ + 1).map(
       idx => {
         val release = idx * task.period
-        Job(release, task.execution, release + task.period)
+        val job = Job(release, task.execution, release + task.period)
+        convertJob(job)
       })
-      .map(convertJob)
-      .toIterator
   }
 }
