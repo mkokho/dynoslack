@@ -1,4 +1,4 @@
-package org.kokho.scheduling
+package org.kokho.scheduling.rts.multicritical
 
 import org.scalatest.FunSuite
 

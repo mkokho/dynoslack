@@ -1,6 +1,6 @@
-package org.kokho.scheduling
+package org.kokho.scheduling.rts.multicritical
 
-import org.kokho.scheduling.rts.multicritical.HiCriticalTask
+import org.kokho.scheduling.{PeriodicTaskBehavior, TaskBehavior}
 import org.scalatest.FlatSpec
 
 /**
