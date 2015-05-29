@@ -1,5 +1,7 @@
 package org.kokho.scheduling
 
+import org.kokho.scheduling.PeriodicTask.PeriodicJob
+
 /**
  * Created with IntelliJ IDEA on 5/28/15.
  * @author: Mikhail Kokho
@@ -67,7 +69,7 @@ trait SynchronousTask extends Task {
  */
 trait PeriodicTask extends Task {
 
-  def convertJob(job: Job): JobType
+  def convertJob(job: PeriodicJob): JobType
 
   override def jobs(from: Int): Iterator[JobType] = {
     val task = this
@@ -75,14 +77,29 @@ trait PeriodicTask extends Task {
     val start = if (from <= task.offset) {
       0
     } else {
-      Math.ceil((from - task.offset) / period).toInt
+      //the job is produced at the end of the current period
+      Math.ceil((from - task.offset).toDouble / period).toInt
     }
 
     Iterator.iterate(start)(_ + 1).map(
       idx => {
-        val release = idx * task.period
-        val job = Job(release, task.execution, release + task.period)
+        val job = PeriodicJob(idx, task)
         convertJob(job)
       })
   }
+}
+
+object PeriodicTask {
+
+  /**
+   * This class enable equality of jobs produced by the same periodic task
+   */
+  sealed case class PeriodicJob(idx: Int, task: Task) extends Job {
+    def release = idx * task.period
+
+    def deadline = release + task.period
+
+    def length = task.execution
+  }
+
 }

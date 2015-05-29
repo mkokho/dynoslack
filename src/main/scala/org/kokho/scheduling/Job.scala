@@ -6,29 +6,36 @@ package org.kokho.scheduling
  */
 trait Job {
 
-  def release:Int
-  def length:Int
-  def deadline:Int
+  def release: Int
+
+  def length: Int
+
+  def deadline: Int
 
   override def toString: String = s"Job($length->$release:$deadline)"
 
 }
 
-object Job {
-  def apply(release_ : Int, length_ : Int, deadline_ : Int) = new Job {
+trait ForwardingJob extends Job {
 
-    override def length: Int = length_
+  def job: Job
 
-    override def deadline: Int = deadline_
-
-    override def release: Int = release_
-  }
-}
-
-abstract class JobDecorator(job: Job) extends Job{
   override def release: Int = job.release
 
   override def length: Int = job.length
 
   override def deadline: Int = job.deadline
+}
+
+object Job {
+  /**
+   * Defines a default constructor of Job objects
+   */
+  final class DefaultJobConstructor(val release:Int, val length:Int, val deadline: Int) extends Job {}
+
+  def apply(release: Int, length: Int, deadline: Int) = new DefaultJobConstructor(release, length, deadline)
+
+  def apply(job_ : Job) = new ForwardingJob {
+    override def job: Job = job_
+  }
 }

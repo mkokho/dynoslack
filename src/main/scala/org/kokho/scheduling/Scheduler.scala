@@ -22,6 +22,8 @@ trait Scheduler {
 
   def schedule():MulticoreSchedule
 
+  def isFeasible: Boolean = tasks.map(_.utilization).sum <= cores.size
+
 }
 
 case class ScheduledJob(from: Int, to: Int, job: Job) {

@@ -1,5 +1,6 @@
 package org.kokho.scheduling.rts.multicritical
 
+import org.kokho.scheduling.PeriodicTask.PeriodicJob
 import org.kokho.scheduling._
 
 /**
@@ -12,9 +13,9 @@ class LoCriticalTask (val period:Int, val loExecution:Int, val earlyReleases: Li
 
   override def execution: Int = loExecution
 
-  override def convertJob(job: Job): JobType = LoCriticalJob(this, job)
+  override def convertJob(job: PeriodicJob): JobType = LoCriticalJob(this, job)
 }
 
 
-case class LoCriticalJob(private val task: LoCriticalTask, job: Job) extends JobDecorator(job){
+case class LoCriticalJob(private val task: LoCriticalTask, job: PeriodicJob) extends ForwardingJob{
 }

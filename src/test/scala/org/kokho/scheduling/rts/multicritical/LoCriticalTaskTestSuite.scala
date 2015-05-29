@@ -11,7 +11,7 @@ class LoCriticalTaskTestSuite extends FlatSpec with TaskBehavior with PeriodicTa
 
   def loCriticalTask = new LoCriticalTask(10, 4, List(6,8))
 
-  "A high critical task" should behave like aTask(loCriticalTask)
+  "A low critical task" should behave like aTask(loCriticalTask)
 
   it should behave like aPeriodicTask(loCriticalTask)
 

@@ -29,6 +29,10 @@ trait TaskBehavior {
       assert(task.jobs().nonEmpty)
     }
 
+    it must "first job must be equal" in {
+      assert(task.jobs().next() == task.jobs().next())
+    }
+
     it must "release jobs no earlier than the period" in {
       val jobs = task.jobs()
       val j1 = jobs.next()

@@ -8,6 +8,9 @@ trait Core {
 
 }
 
+/**
+ * Represents cores with identical speed
+ */
 final case class UniformCore(idx: Int) extends Core{
 
 }
