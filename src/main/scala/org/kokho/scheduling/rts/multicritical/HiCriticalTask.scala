@@ -7,7 +7,18 @@ import org.kokho.scheduling._
  * Created with IntelliJ IDEA on 5/28/15.
  * @author: Mikhail Kokho
  */
-class HiCriticalTask (val period:Int, val loExecution:Int, val hiExecution: Int) extends MulticriticalTask{
+
+/**
+ *
+ * @param period - period of execution
+ * @param loExecution - execution time of a job in low-critical mode
+ * @param hiExecution - execution time of a job in high-critical mode
+ * @param lowJobs - set of indexes of jobs which are executed in low-critical mode.
+ *                The jobs are indexed from 0.
+ */
+class HiCriticalTask (val period:Int, val loExecution:Int, val hiExecution: Int,
+                       val lowJobs: Int => Boolean = {_ => false})
+  extends MulticriticalTask{
 
   override type JobType = HiCriticalJob
 
@@ -23,4 +34,7 @@ case class HiCriticalJob(private val task: HiCriticalTask, job: PeriodicJob) ext
 
   val loWcet = task.loExecution
 
+  def takeLowWcet: Boolean = task.lowJobs(this.job.idx)
+
+  override def length = if (takeLowWcet) loWcet else hiWcet
 }

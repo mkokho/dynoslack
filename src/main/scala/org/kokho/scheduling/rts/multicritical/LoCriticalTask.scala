@@ -11,6 +11,8 @@ class LoCriticalTask (val period:Int, val loExecution:Int, val earlyReleases: Li
 
   override type JobType = LoCriticalJob
 
+  def this(period: Int, loExecution: Int) = this(period, loExecution, loExecution.until(period).toList)
+
   override def execution: Int = loExecution
 
   override def convertJob(job: PeriodicJob): JobType = LoCriticalJob(this, job)

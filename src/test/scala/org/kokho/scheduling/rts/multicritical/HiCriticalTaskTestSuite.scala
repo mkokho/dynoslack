@@ -9,10 +9,20 @@ import org.scalatest.FlatSpec
  */
 class HiCriticalTaskTestSuite extends FlatSpec with TaskBehavior with PeriodicTaskBehavior{
 
-  def hiCriticalTask = new HiCriticalTask(10, 4, 6)
+  def isOdd(x: Int) = x % 2 == 1
+
+  def hiCriticalTask = new HiCriticalTask(10, 4, 6, isOdd)
 
   "A high critical task" should behave like aTask(hiCriticalTask)
 
   it should behave like aPeriodicTask(hiCriticalTask)
 
+  it should "return jobs that take low WCET" in {
+    val jobs = hiCriticalTask.jobs()
+    val job0 = jobs.next()
+    val job1 = jobs.next()
+
+    assert(job0.length == hiCriticalTask.hiExecution)
+    assert(job1.length == hiCriticalTask.loExecution)
+  }
 }
