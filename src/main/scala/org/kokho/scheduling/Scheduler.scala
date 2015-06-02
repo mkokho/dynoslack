@@ -169,6 +169,8 @@ case class ScheduledJob(from: Int, to: Int, job: Job) {
 case class ActiveJob(job: Job) {
   private var remainingTime = job.length
 
+  def length = job.length
+
   def deadline = job.deadline
 
   def isCompleted = remainingTime == 0
