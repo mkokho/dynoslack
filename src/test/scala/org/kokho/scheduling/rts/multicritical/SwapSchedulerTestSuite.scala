@@ -55,7 +55,7 @@ class SwapSchedulerTestSuite extends FlatSpec with SchedulerBehavior with Schedu
 
 
   val loSet = Set[LoCriticalTask]() +
-    new LoCriticalTask(10, 4, List(6, 8))
+    LoCriticalTask(10, 4, List(6, 8))
 
   val hiSet = Set[HiCriticalTask]() +
     new HiCriticalTask(10, 4, 6)

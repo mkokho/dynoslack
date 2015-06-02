@@ -4,6 +4,7 @@ import org.kokho.scheduling._
 import org.kokho.scheduling.exceptions.UnschedulableSetException
 
 import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 
 /**
  * Created with IntelliJ IDEA on 5/28/15.
@@ -44,34 +45,98 @@ final class SwapSchedule(val taskPartition: Seq[Set[MulticriticalTask]]) extends
     )
   }
 
-  val taskToCore: Map[Task, Int] = {
-    for {
-      idx <- 0.until(taskPartition.size)
-      task <- taskPartition(idx)
-    } yield task -> idx
-  }.toMap
+  /*  val taskToCore: Map[Task, Int] = {
+      for {
+        idx <- 0.until(taskPartition.size)
+        task <- taskPartition(idx)
+      } yield task -> idx
+    }.toMap*/
 
-  //  private def toJobsIterator(tasks: Set[MulticriticalTask]): Iterator[Job] = new LocalSchedule(tasks)
 
-  private val iterators: Seq[LocalSchedule] = taskPartition.map(new LocalSchedule(_))
+  private val localSchedules: Seq[LocalSchedule] = taskPartition.map(new LocalSchedule(_))
+
+  val maxDeadline = loTasks.map(_.deadline).max
+
+  private def releaseEarlyJobs(): Unit = {
+    def slackMap(slack: Seq[SlackPeriod], sum: Int) = {
+      val first = slack.head
+//      1.to()
+    }
+
+    //we collect all tasks that can release early jobs
+    val tasksForER: Seq[Seq[LoCriticalTask]] = localSchedules map { lSch:LocalSchedule =>
+      if (lSch.isBusy) Seq.empty
+      else lSch.tasksForEarlyRelease
+    }
+
+    //if there is at least one task that can release an early job, we compute available slack
+    if (tasksForER.nonEmpty){
+      val availableSlack:Seq[Seq[SlackPeriod]] = localSchedules.map(_.slackForecast(maxDeadline))
+
+      //now we compute how much slack before each moment of time
+      //the map contains pairs time -> available slack
+//      val scheduleToSlack:Seq[Map[Int, Int]] = availableSlack.map()
+
+    }
+
+
+
+    localSchedules foreach (localSch => {
+      //      print(s"Slack on $localSch: ")
+      //      println(localSch.slackForecast(10))
+    })
+
+  }
 
   override def next(): Seq[ScheduledJob] = {
-    iterators.map(itr => itr.next())
+    releaseEarlyJobs()
+    localSchedules.map(itr => itr.next())
   }
 
 }
 
-private class LocalSchedule(tasks: Set[MulticriticalTask]) extends Iterator[ScheduledJob] {
-  override def hasNext: Boolean = true
+private class LocalSchedule(tasks_ : Set[MulticriticalTask]) extends Iterator[ScheduledJob] {
 
   implicit val activeJobOrdering: Ordering[ActiveJob] = Ordering.by(_.deadline)
+
+  val tasks: Seq[MulticriticalTask] = mutable.Seq[MulticriticalTask]() ++ tasks_
+
+  override def toString(): String = s"Schedule of $tasks"
+
+  override def hasNext: Boolean = true
 
   private var time = 0
   private var activeJobs = ListBuffer[ActiveJob]()
   private var slackJobs = ListBuffer[SlackUnit]()
 
+  /**
+   * Tests whether the schedule has active jobs that are started but not finished
+   *
+   * @return true if there is a job that is being executed
+   */
+  def isBusy: Boolean = {
+    if (activeJobs.isEmpty) false
+    else {
+      val aJob = activeJobs.head
+      assert(!aJob.isCompleted) //we don't have completed job at the beginning
+      assert(aJob.isBusy || activeJobs.drop(1).filter(_.isBusy).isEmpty) //there are no busy jobs if the first job is not busy
+      aJob.isBusy
+    }
+  }
+
+  def tasksForEarlyRelease:Seq[LoCriticalTask] = tasks collect {case loTask: LoCriticalTask if loTask.canReleaseEarlyJob(time) => loTask}
+
+  def extractJob(job: ActiveJob): Unit = {
+    assert(activeJobs.contains(job))
+    activeJobs -= job
+  }
+
+  def insertJob(job: ActiveJob): Unit = {
+    activeJobs += job
+    activeJobs = activeJobs.sorted
+  }
+
   def slackForecast(limit: Int): Seq[SlackPeriod] = {
-    assert(limit > time)
 
     var slackSeq: List[SlackPeriod] = List()
     var copyActiveJobs = activeJobs.clone().toList
@@ -79,9 +144,9 @@ private class LocalSchedule(tasks: Set[MulticriticalTask]) extends Iterator[Sche
 
     def executeSlack(t: Int) = {
       slackSeq = slackSeq match {
-        case Nil => List(SlackPeriod(t, t+1))
+        case Nil => List(SlackPeriod(t, t + 1))
         case head :: tail if t == head.to => SlackPeriod(head.from, t + 1) :: tail
-        case _ =>  SlackPeriod(t, t+1) :: slackSeq
+        case _ => SlackPeriod(t, t + 1) :: slackSeq
       }
 
       if (copySlackUnits.nonEmpty)
@@ -96,7 +161,7 @@ private class LocalSchedule(tasks: Set[MulticriticalTask]) extends Iterator[Sche
         copyActiveJobs = newJob :: copyActiveJobs.tail
     }
 
-    for (t <- time.until(limit)) {
+    for (t <- time.until(time + limit)) {
       copyActiveJobs = (copyActiveJobs ++ releaseJobs(t)).sorted
 
       (copyActiveJobs, copySlackUnits) match {
@@ -112,35 +177,35 @@ private class LocalSchedule(tasks: Set[MulticriticalTask]) extends Iterator[Sche
       }
     }
 
-    slackSeq
+    slackSeq.reverse
   }
 
-  private def releaseJobs(time: Int): Set[ActiveJob] = {
+  private def releaseJobs(time: Int): Seq[ActiveJob] = {
+    //if low critical task has early released jobs its future jobs are out of period
     tasks
-      .filter(time % _.period == 0)
       .map(_.jobs(time).next())
+      .filter(_.release == time)
       .map(ActiveJob)
   }
 
-  private def pushSlack(job: ActiveJob) = {
-    if (slackJobs.nonEmpty && slackJobs.head.deadline < job.deadline) {
-      slackJobs.trimStart(1)
-      slackJobs.append(new SlackUnit(job.deadline))
-    }
-  }
-
-  def generateSlack(hiJob: HiCriticalJob) = {
-    assert(hiJob.takeLowWcet)
-    val len = hiJob.hiWcet - hiJob.loWcet
-    val units = 1.to(len).map(_ => new SlackUnit(hiJob.deadline))
-    slackJobs.prependAll(units)
-    slackJobs = slackJobs.sortWith(_.deadline < _.deadline)
-  }
 
   override def next(): ScheduledJob = {
-    if (slackJobs.nonEmpty || activeJobs.isEmpty) {
-      println(slackForecast(time+10))
+
+    def pushSlack(job: ActiveJob) = {
+      if (slackJobs.nonEmpty && slackJobs.head.deadline < job.deadline) {
+        slackJobs.trimStart(1)
+        slackJobs.append(new SlackUnit(job.deadline))
+      }
     }
+
+    def generateSlack(hiJob: HiCriticalJob) = {
+      assert(hiJob.takeLowWcet)
+      val len = hiJob.hiWcet - hiJob.loWcet
+      val units = 1.to(len).map(_ => new SlackUnit(hiJob.deadline))
+      slackJobs.prependAll(units)
+      slackJobs = slackJobs.sortWith(_.deadline < _.deadline)
+    }
+
 
     val newRelease = releaseJobs(time)
     if (newRelease.nonEmpty) {
@@ -175,7 +240,7 @@ private class LocalSchedule(tasks: Set[MulticriticalTask]) extends Iterator[Sche
 
 private class SlackUnit(val deadline: Int)
 
-private case class SlackPeriod(val from: Int, val to: Int) {
+private case class SlackPeriod(from: Int, to: Int) {
   require(from < to)
 }
 

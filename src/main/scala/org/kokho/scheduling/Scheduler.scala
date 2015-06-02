@@ -173,6 +173,8 @@ case class ActiveJob(job: Job) {
 
   def isCompleted = remainingTime == 0
 
+  def isBusy = !isCompleted && remainingTime < job.length
+
   def execute(): ActiveJob = {
     if (isCompleted)
       throw new IllegalStateException(s"The job $job has been completed. Cannot execute it")

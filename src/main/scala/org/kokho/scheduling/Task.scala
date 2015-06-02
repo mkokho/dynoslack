@@ -20,7 +20,7 @@ trait Task {
 
   type JobType <: Job
 
-  def name: String = "Unnamed Task"
+  def name: String = "NoName"
 
   def offset: Int
 
@@ -46,7 +46,11 @@ trait Task {
   def jobs(): Iterator[JobType] = jobs(0)
 
 
-  override def toString: String = s"$name($offset, $execution, $deadline, $period)"
+  override def toString: String =
+    if (offset == 0 && deadline == period)
+      s"$name($execution in $period)"
+    else
+      s"$name($offset, $execution, $deadline, $period)"
 
 }
 
@@ -92,7 +96,7 @@ trait PeriodicTask extends Task {
 object PeriodicTask {
 
   /**
-   * This class enable equality of jobs produced by the same periodic task
+   * This class enables equality of jobs produced by the same periodic task
    */
   sealed case class PeriodicJob(idx: Int, task: Task) extends Job {
     def release = idx * task.period

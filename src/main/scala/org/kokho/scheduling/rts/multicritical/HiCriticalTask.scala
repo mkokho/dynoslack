@@ -18,7 +18,8 @@ import org.kokho.scheduling._
  */
 class HiCriticalTask (val period:Int, val loExecution:Int, val hiExecution: Int,
                        val lowJobs: Int => Boolean = {_ => false})
-  extends MulticriticalTask{
+  extends MulticriticalTask
+  with PeriodicTask {
 
   override type JobType = HiCriticalJob
 
