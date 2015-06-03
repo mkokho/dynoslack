@@ -33,7 +33,10 @@ sealed trait LoCriticalTask extends MulticriticalTask {
 
     val newHistory = time :: historyOfEarlyReleases.dropWhile(_ > time)
 
-    new LTaskWithRestrictedHistory(period, execution, earlyReleases, time)
+    this match {
+      case parent: LTaskWithoutEarlyReleases =>  new LTaskWithRestrictedHistory(period, execution, earlyReleases, time, parent.hashCode())
+      case parent: LTaskWithRestrictedHistory => new LTaskWithRestrictedHistory(period, execution, earlyReleases, time, parent.parentHash)
+    }
   }
 
   def canReleaseEarlyJob(time: Int): Boolean = {
@@ -62,12 +65,13 @@ final class LTaskWithoutEarlyReleases (val period: Int, val execution: Int, val 
   override protected val historyOfEarlyReleases: List[Int] = Nil
 
   override def convertJob(job: PeriodicJob): JobType = new LoCriticalJob(this, job)
-
 }
 
-final class LTaskWithRestrictedHistory (val period: Int, val execution: Int, val earlyReleases: List[Int], lastEarlyRelease: Int) extends LoCriticalTask {
+final case class LTaskWithRestrictedHistory (val period: Int, val execution: Int, val earlyReleases: List[Int], lastEarlyRelease: Int, parentHash: Int) extends LoCriticalTask {
 
   override protected val historyOfEarlyReleases: List[Int] =  List(lastEarlyRelease)
+
+  override def jobs() = jobs(lastEarlyRelease)
 
   override def jobs(from: Int): Iterator[JobType] = {
     require(from >= lastEarlyRelease, s"This task cannot produce jobs before time $lastEarlyRelease")

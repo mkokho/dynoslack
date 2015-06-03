@@ -40,7 +40,7 @@ trait SchedulerBehavior {
     }
 
     it must "periodically execute the task" in {
-      val task = partition.flatten.toSeq(0)
+      val task = partition.flatten.head
       //get schedule on the core
       0.to(1) foreach { _ =>
         val flatSchedule = schedule.flatten.take(task.period).toList.map(_.job)

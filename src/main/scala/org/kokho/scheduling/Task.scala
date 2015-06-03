@@ -32,18 +32,14 @@ trait Task {
 
   final def utilization: Double = execution.toDouble / deadline
 
-  /*
-  //deadline is not overriden here by ImplicitDeadlineTask
-  //therefore require method throws an exception
-  require(offset >= 0, "Offset must be positive")
-  require(execution > 0, "Execution must be non-negative")
-  require(deadline > 0, "Deadline must be non-negative")
-  require(period > 0, "Period must be non-negative")
-  */
-
   def jobs(from: Int): Iterator[JobType]
 
   def jobs(): Iterator[JobType] = jobs(0)
+
+  def job(idx: Int): JobType = {
+    require(idx > 0)
+    jobs().drop(idx - 1).next()
+  }
 
 
   override def toString: String =

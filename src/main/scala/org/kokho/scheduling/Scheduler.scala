@@ -42,7 +42,7 @@ abstract class Schedule extends Iterator[Seq[ScheduledJob]] {
   override def hasNext: Boolean = true
 
   /**
-   * Partitioning of the tasks into sets such that each set has utilization not greater than 1
+   * Each sequence of tasks in the partition is executed on ites own processor
    */
   def partition: Seq[Seq[Task]]
 
