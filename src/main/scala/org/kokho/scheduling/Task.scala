@@ -1,12 +1,10 @@
 package org.kokho.scheduling
 
-import org.kokho.scheduling.PeriodicTask.PeriodicJob
-
 /**
  * Created with IntelliJ IDEA on 5/28/15.
  * @author: Mikhail Kokho
  *
- *          Task is an object that produces an infinite sequence of jobs.
+ *          Task is an immutable object that produces an infinite sequence of jobs.
  *
  *          A task is specified by four parameters:
  *          offset - the release time of the first job
@@ -18,9 +16,10 @@ import org.kokho.scheduling.PeriodicTask.PeriodicJob
  */
 trait Task {
 
+  /**
+   * the type of jobs released by this task
+   */
   type JobType <: Job
-
-  def name: String = "NoName"
 
   def offset: Int
 
@@ -30,16 +29,36 @@ trait Task {
 
   def period: Int
 
-  final def utilization: Double = execution.toDouble / deadline
 
+  def name: String = "NoName"
+
+
+  /**
+   * Generates the jobs of this task starting at time $from
+   *
+   * @param from a non negative number that bounds the release time of the first job.
+   *             All produces jobs has release time greater than $from
+   * @return an iterator of jobs
+   * @throws IllegalArgumentException if $from is smaller than 0
+   */
   def jobs(from: Int): Iterator[JobType]
 
-  def jobs(): Iterator[JobType] = jobs(0)
+  /**
+   * Generates all jobs released by this task
+   */
+  def jobs(): Iterator[JobType] = jobs(this.offset)
 
-  def job(idx: Int): JobType = {
-    require(idx > 0)
-    jobs().drop(idx - 1).next()
+  /**
+   * Drops $n jobs and returns the next job
+   * 
+   * @param n the number of jobs to drop. Must be non negative
+   */
+  def job(n: Int): JobType = {
+    require(n >= 0)
+    jobs().drop(n).next()
   }
+
+  final def utilization: Double = execution.toDouble / deadline
 
 
   override def toString: String =
@@ -50,56 +69,10 @@ trait Task {
 
 }
 
-/**
- * A task whose deadline equals to the period
- */
-trait ImplicitDeadlineTask extends Task {
-  val deadline = period
-}
 
-/**
- * A task that has offset 0
- */
-trait SynchronousTask extends Task {
-  val offset = 0
-}
 
-/**
- * A task that releases jobs at times k*period
- */
-trait PeriodicTask extends Task {
 
-  def convertJob(job: PeriodicJob): JobType
 
-  override def jobs(from: Int): Iterator[JobType] = {
-    val task = this
 
-    val start = if (from <= task.offset) {
-      0
-    } else {
-      //the job is produced at the end of the current period
-      Math.ceil((from - task.offset).toDouble / period).toInt
-    }
 
-    Iterator.iterate(start)(_ + 1).map(
-      idx => {
-        val job = PeriodicJob(idx, task)
-        convertJob(job)
-      })
-  }
-}
 
-object PeriodicTask {
-
-  /**
-   * This class enables equality of jobs produced by the same periodic task
-   */
-  sealed case class PeriodicJob(idx: Int, task: Task) extends Job {
-    def release = idx * task.period
-
-    def deadline = release + task.period
-
-    def length = task.execution
-  }
-
-}

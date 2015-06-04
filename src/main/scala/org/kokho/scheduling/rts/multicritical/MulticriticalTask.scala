@@ -7,7 +7,6 @@ import org.kokho.scheduling.{PeriodicTask, SynchronousTask, ImplicitDeadlineTask
  * @author: Mikhail Kokho
  */
 trait MulticriticalTask extends Task
-with SynchronousTask
 with ImplicitDeadlineTask
  {
 

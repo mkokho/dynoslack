@@ -11,7 +11,7 @@ class HiCriticalTaskTestSuite extends FlatSpec with TaskBehavior with PeriodicTa
 
   def isOdd(x: Int) = x % 2 == 1
 
-  def hiCriticalTask = new HiCriticalTask(10, 4, 6, isOdd)
+  def hiCriticalTask = HiCriticalTask(10, 4, 6, isOdd)
 
   "A high critical task" should behave like aTask(hiCriticalTask)
 

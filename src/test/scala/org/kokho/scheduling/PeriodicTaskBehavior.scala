@@ -1,6 +1,6 @@
 package org.kokho.scheduling
 
-import org.scalatest.FlatSpec
+import org.scalatest.{Matchers, FlatSpec}
 
 import scala.util.Random
 
@@ -8,7 +8,7 @@ import scala.util.Random
  * Created with IntelliJ IDEA on 5/28/15.
  * @author: Mikhail Kokho
  */
-trait PeriodicTaskBehavior {
+trait PeriodicTaskBehavior extends Matchers{
   this: FlatSpec =>
 
   def aPeriodicTask(task: PeriodicTask): Unit = {
@@ -31,31 +31,28 @@ trait PeriodicTaskBehavior {
     }
 
     it must "produce equal jobs no matter where it starts" in {
-      def isEqual[T](a: Iterator[T], b: Iterator[T], limit: Int = 100): Boolean =
-        if (limit == 0) true
-        else {
-          val jobA = a.next()
-          val jobB = b.next()
-          jobA == jobB && isEqual(a, b, limit - 1)
-        }
-
       // random start
       val r = Random.nextInt(1 << 10)
-      assert(isEqual(task.jobs(r), task.jobs(r)))
+      // size to compare
+      val size = 100
 
-      var itr = task.jobs()
-      var itrAhead = task.jobs(1)
+      task.jobs(r).take(size).toList shouldEqual task.jobs(r).take(size).toList
+
+    }
+
+    it must "produce two job iterators, one being ahead, that produce equal jobs from some moment of time" in {
+      val size = 1
+      var itr = task.jobs().drop(1).take(size).toList
+      var itrAhead = task.jobs(task.offset + 1).take(size).toList
 
       //iterator that is 1 second behind must syncronize with the iterator that is ahead after one iteration
-      itr.next()
-      assert(isEqual(itr, itrAhead))
+      itr shouldEqual itrAhead
 
       //one iterator is exactly behind for one period
-      itr = task.jobs()
-      itr.next()
-      itrAhead = task.jobs(task.period)
-      assert(isEqual(itr, itrAhead))
+      itr = task.jobs().drop(1).take(size).toList
+      itrAhead = task.jobs(task.offset + task.period).take(size).toList
 
+      itr shouldEqual itrAhead
     }
 
   }

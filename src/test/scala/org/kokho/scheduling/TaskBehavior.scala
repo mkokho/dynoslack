@@ -1,13 +1,13 @@
 package org.kokho.scheduling
 
 import org.kokho.scheduling.rts.multicritical.{HiCriticalTask, HiCriticalJob}
-import org.scalatest.FlatSpec
+import org.scalatest.{Matchers, FlatSpec}
 
 /**
  * Created with IntelliJ IDEA on 5/28/15.
  * @author: Mikhail Kokho
  */
-trait TaskBehavior {
+trait TaskBehavior extends Matchers{
   this: FlatSpec =>
 
   def aTask(task: Task) {
@@ -29,7 +29,7 @@ trait TaskBehavior {
       assert(task.jobs().nonEmpty)
     }
 
-    it must "first job must be equal" in {
+    it must "produce equal first jobs" in {
       assert(task.jobs().next() == task.jobs().next())
     }
 
@@ -44,6 +44,10 @@ trait TaskBehavior {
     it must "release the first job at the moment offset" in {
       assert(task.jobs().next().release == task.offset,
         "The release time of the first job does not equal offset of the task")
+    }
+
+    it must "have first job in its iterator equal to the job with index 0" in {
+      task.jobs().next() shouldEqual task.job(0)
     }
 
     it must "produce jobs in order of their release times" in {

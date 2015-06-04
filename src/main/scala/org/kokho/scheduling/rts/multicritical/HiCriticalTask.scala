@@ -1,6 +1,5 @@
 package org.kokho.scheduling.rts.multicritical
 
-import org.kokho.scheduling.PeriodicTask.PeriodicJob
 import org.kokho.scheduling._
 
 /**
@@ -8,34 +7,26 @@ import org.kokho.scheduling._
  * @author: Mikhail Kokho
  */
 
-/**
- *
- * @param period - period of execution
- * @param loExecution - execution time of a job in low-critical mode
- * @param hiExecution - execution time of a job in high-critical mode
- * @param lowJobs - set of indexes of jobs which are executed in low-critical mode.
- *                The jobs are indexed from 0.
- */
-class HiCriticalTask (val period:Int, val loExecution:Int, val hiExecution: Int,
-                       val lowJobs: Int => Boolean = {_ => false})
-  extends MulticriticalTask
-  with PeriodicTask {
+trait HiCriticalTask extends MulticriticalTask with SynchronousTask{
 
   override type JobType = HiCriticalJob
 
-  override def execution: Int = hiExecution
+  def hiExecution: Int
 
-  override def convertJob(job: PeriodicJob): JobType = HiCriticalJob(this, job)
+  def loExecution: Int
+
+  def lowJobs: Int => Boolean
+
+  override def execution: Int = hiExecution
 }
 
 
-case class HiCriticalJob(private val task: HiCriticalTask, job: PeriodicJob) extends ForwardingJob{
+object HiCriticalTask {
 
-  val hiWcet = task.hiExecution
+  def apply(period:Int, loExecution:Int, hiExecution: Int, lowJobs: Int => Boolean) =
+    new HiCriticalTaskDefault(period, loExecution, hiExecution, lowJobs)
 
-  val loWcet = task.loExecution
+  def apply(period:Int, loExecution:Int, hiExecution: Int) =
+    new HiCriticalTaskDefault(period, loExecution, hiExecution, _ => false)
 
-  def takeLowWcet: Boolean = task.lowJobs(this.job.idx)
-
-  override def length = if (takeLowWcet) loWcet else hiWcet
 }

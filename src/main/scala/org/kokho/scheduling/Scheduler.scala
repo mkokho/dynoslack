@@ -38,37 +38,9 @@ trait Scheduler {
 
 }
 
-abstract class Schedule extends Iterator[Seq[ScheduledJob]] {
-  override def hasNext: Boolean = true
 
-  /**
-   * Each sequence of tasks in the partition is executed on ites own processor
-   */
-  def partition: Seq[Seq[Task]]
 
-  /**
-   * Size of the tuples contained by this Schedule
-   */
-  def arity: Int = partition.size
 
-  /**
-   * The tasks of the schedule
-   */
-  lazy val tasks: Seq[Task] = partition.flatten
-
-  /**
-   * Hyper-period of the tasks of the set partition($idx)
-   */
-  def hyperPeriod(idx: Int): Int = {
-    if (idx < 0 || idx >= arity) {
-      throw new IllegalArgumentException(
-        s"Index is out of bound. Expected between 0 and $arity. Given $idx"
-      )
-    }
-
-    lcm(partition(idx).map(_.period).iterator)
-  }
-}
 
 /*
 object Scheduler {
@@ -158,41 +130,7 @@ object Scheduler {
   }
 }*/
 
-case class ScheduledJob(from: Int, to: Int, job: Job) {
-  require(to > from, s"Incorrect interval. The end is smaller than the beginning: [$from, $to]. ")
 
-  def length = to - from
 
-  override def toString: String = job + "->" + from + ":" + to
-}
 
-case class ActiveJob(job: Job) {
-  private var remainingTime = job.length
 
-  def length = job.length
-
-  def deadline = job.deadline
-
-  def isCompleted = remainingTime == 0
-
-  def isBusy = !isCompleted && remainingTime < job.length
-
-  def execute(): ActiveJob = {
-    if (isCompleted)
-      throw new IllegalStateException(s"The job $job has been completed. Cannot execute it")
-
-    val that = ActiveJob(job)
-    that.remainingTime = remainingTime - 1
-    that
-  }
-}
-
-object IdleJob extends Job {
-  override def release: Int = 0
-
-  override def length: Int = Integer.MAX_VALUE
-
-  override def deadline: Int = Integer.MAX_VALUE
-
-  override def toString: String = "IJ"
-}

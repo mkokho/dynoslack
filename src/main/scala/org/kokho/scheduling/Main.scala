@@ -9,7 +9,10 @@ object Main extends App{
   println(
     """
       | ~~
-      | ~~ This package contains implementation of several scheduling algorithms
+      | ~~ This package contains implementation of several scheduling algorithms:
+      | ~~    - E-MC with local release
+      | ~~    - E-MC with global release
+      | ~~    - E-MC with swap release
       | ~~
     """.stripMargin)
 

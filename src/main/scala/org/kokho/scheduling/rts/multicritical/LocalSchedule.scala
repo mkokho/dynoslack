@@ -55,7 +55,7 @@ class LocalSchedule(immutableTasks : Seq[MulticriticalTask]) extends Iterator[Sc
     require(idx != -1, s"Task $loTask is not in this schedule $this")
     require(loTask.canReleaseEarlyJob(time), s"Task $loTask cannot release an early job at time $time")
 
-    val newTask = loTask.releaseEarlyJob(time)
+    val newTask = loTask.shiftedTasks(time)
     tasks(idx) = newTask
 
     val newJob  = ActiveJob(newTask.jobs(time).next())
