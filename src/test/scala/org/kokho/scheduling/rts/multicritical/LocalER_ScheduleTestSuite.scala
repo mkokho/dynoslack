@@ -1,19 +1,27 @@
 package org.kokho.scheduling.rts.multicritical
 
-import org.kokho.scheduling.{IdleJob, Job}
-import org.scalatest.FunSuite
+import org.kokho.scheduling.{Schedule, IdleJob, Job}
+import org.scalatest.{FlatSpec, FunSuite}
 
 /**
  * Created with IntelliJ IDEA on 6/3/15.
  * @author: Mikhail Kokho
  */
-class LocalERSwapSchedulerTestSuite extends FunSuite{
+class LocalER_ScheduleTestSuite extends FlatSpec with MulticriticalScheduleBehavior{
 
-  val swapScheduler = new SwapScheduler()
+  override implicit def partitionToSchedule(partition: Seq[Seq[MulticriticalTask]]): MulticriticalSchedule = new ScheduleWithLocalER(partition)
 
   val isOdd: Int => Boolean = (x:Int) => x % 2 == 1
 
-  private def checkEarlyReleaseInThe2ndPeriod(tasks: Seq[MulticriticalTask]): Unit = {
+
+  def setNoER = partitionToSchedule(Seq(Seq(HiCriticalTask(6, 2, 3), LoCriticalTask(6, 2, List()))))
+
+
+  behavior of "A schedule with local early releases"
+
+  it should behave like aMulticriticalSchedule(setNoER)
+
+ /* private def checkEarlyReleaseInThe2ndPeriod(tasks: Seq[MulticriticalTask]): Unit = {
     assert(tasks.size == 2)
     val hiTask = tasks(0) match {case t: HiCriticalTask => t}
     val loTask = tasks(1) match {case t: LoCriticalTask => t}
@@ -34,9 +42,9 @@ class LocalERSwapSchedulerTestSuite extends FunSuite{
 
     assert(jobs2ndPeriod == scheduled2ndPeriod, "Early released job has not been scheduled")
 
-  }
+  }*/
 
-  test("testing local early release without static slack") {
+  /*test("testing local early release without static slack") {
     val hiTask = HiCriticalTask(6, 2, 4, isOdd)
     val loTask = LoCriticalTask(6, 2, List(4))
 
@@ -70,5 +78,5 @@ class LocalERSwapSchedulerTestSuite extends FunSuite{
 
     assert(jobs2ndPeriod == scheduled2ndPeriod, "Early released job has not been scheduled")
   }
-
+*/
 }
