@@ -1,7 +1,6 @@
 package org.kokho.scheduling.rts.multicritical
 
-import org.kokho.scheduling.{Schedule, IdleJob, Job}
-import org.scalatest.{FlatSpec, FunSuite}
+import org.scalatest.FlatSpec
 
 /**
  * Created with IntelliJ IDEA on 6/3/15.
@@ -36,7 +35,7 @@ class LocalER_ScheduleTestSuite extends FlatSpec with MulticriticalScheduleBehav
 
     assert(firstJobs == firstScheduledJobs, "First jobs of the tasks has not been scheduled correctly")
 
-    val loTaskER = loTask.shiftedTasks(period + loTask.earlyReleases.head)
+    val loTaskER = loTask.shiftedTask(period + loTask.earlyReleases.head)
     val jobs2ndPeriod = Set(hiTask.job(1), loTask.job(1), loTaskER.job(0))
     val scheduled2ndPeriod = schedule.take(period).map(_.job).filter(_ != IdleJob).toSet
 
@@ -71,8 +70,8 @@ class LocalER_ScheduleTestSuite extends FlatSpec with MulticriticalScheduleBehav
 
     assert(firstJobs == firstScheduledJobs, "First jobs of the tasks has not been scheduled correctly")
 
-    val loTaskA_ER = loTaskA.shiftedTasks(14)
-    val loTaskB_ER = loTaskB.shiftedTasks(14)
+    val loTaskA_ER = loTaskA.shiftedTask(14)
+    val loTaskB_ER = loTaskB.shiftedTask(14)
     val jobs2ndPeriod = Set(hiTask.job(1), loTaskA.job(1), loTaskB.job(1), loTaskA_ER.job(0), loTaskB_ER.job(0))
     val scheduled2ndPeriod = schedule.take(10).map(_.job).toSet
 
