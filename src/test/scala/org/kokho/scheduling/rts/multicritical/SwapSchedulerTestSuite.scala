@@ -1,82 +1,54 @@
 package org.kokho.scheduling.rts.multicritical
 
 import org.kokho.scheduling._
-import org.scalatest.FlatSpec
+import org.scalatest.{FlatSpec, Matchers}
 
 /**
  * Created with IntelliJ IDEA on 5/28/15.
  * @author: Mikhail Kokho
  */
-abstract class SwapSchedulerTestSuite extends FlatSpec with SchedulerBehavior with ScheduleBehavior {
+class SwapSchedulerTestSuite extends FlatSpec
+with Matchers
+with MulticriticalScheduleBehavior {
 
-  val swapScheduler: Scheduler
-  val schedule: Schedule
-/*
-
-  "A schedule of a SwapScheduler" should behave like aSchedule(swapScheduler.schedule(twoTasksOneCorePartition))
+  override def toSchedule(tasks: Partition): MulticriticalSchedule = new SwapSchedule(tasks)
 
 
+  /**
+   * The following set is expected to swap at time 5:
+   *  A E _ _ _ ~ ~ B _ _ ...
+   *  C _ _ _ _ _ _ ~ ~ C _ _ _ ...
+   * 0   2     5   7   9
+   * Idle time is form 5 to 7 on the first core, and from 7 to 9 on the second core
+   */
+  def lowJobs = Set(0)
+  val swapSet = (
+    Seq() :+
+      HiCriticalTask("A", 12, 1, 3, lowJobs) :+
+      LoCriticalTask(12, 4, List(5)) :+
+      HiCriticalTask("B", 17, 7, 7)
+    ,
+    Seq() :+
+      HiCriticalTask("C", 9, 7, 7)
+    )
 
-  "A SwapScheduler of one task on one core" should
-    behave like
-    aSchedulerWithOneTaskOnOneCore(swapScheduler.schedule(oneTaskOneCorePartition), oneTaskOneCorePartition)
+  behavior of "A Swap Schedule"
 
-
-
-  "A SwapScheduler" should "be able to execute jobs in low-critical mode" in {
-    val task = HiCriticalTask(10, 4, 6, isOdd)
-    val schedule = swapScheduler.schedule(Set(task), 1).flatten.take(20).toList.map(_.job)
-
-    var execution: Int = schedule.takeWhile(_ != IdleJob).size
-    assert(execution == task.hiExecution)
-
-    execution = schedule.drop(task.period).takeWhile(_ != IdleJob).size
-    assert(execution == task.loExecution)
-
+  it should "release jobs locally and globally" in {
+    pending
   }
-*/
 
+  it should "swap jobs" in {
+    val analyzer = new ScheduleAnalyzer(swapSet, 12)
+    val loTask = swapSet._1 collectFirst {case t:LoCriticalTask => t} get
 
+    val scheduleOfJobs: Seq[ScheduledJob] = analyzer.findJobs(loTask)
+    val foundJobs: Seq[Job] = scheduleOfJobs.map(_.job)
+
+    val extraJob = loTask.shiftedTasks(5).job(0)
+
+    foundJobs should contain(extraJob)
+  }
 
 }
 
-
-/*
-
-
-  val loSet = Set[LoCriticalTask]() +
-    LoCriticalTask(10, 4, List(6, 8))
-
-  val hiSet = Set[HiCriticalTask]() +
-    HiCriticalTask(10, 4, 6)
-
-  "A SwapScheduler" must "produce a schedule" in {
-    //    s.take(10) foreach println
-    //    Scheduler.printSchedule(s)
-  }
-
-  def isOdd(x: Int) = x % 2 == 1
-
-  def oneTaskOneCorePartition: Seq[Set[MulticriticalTask]] = {
-    val task = HiCriticalTask(10, 4, 6)
-    Seq(Set(task))
-  }
-
-  def twoTasksOneCorePartition: Seq[Set[MulticriticalTask]] = {
-    val taskA = HiCriticalTask(8, 4, 4)
-    val taskB = HiCriticalTask(12, 4, 4)
-    Seq(Set(taskA, taskB))
-  }
-
-
- "produce valid schedules" in {
-    aValidSchedule(swapScheduler.schedule(oneTaskOneCorePartition))
-    aValidSchedule(swapScheduler.schedule(twoTasksOneCorePartition))
-
-    val tasks = Set[MulticriticalTask]() +
-      HiCriticalTask(8,4,6, isOdd) +
-      HiCriticalTask(24, 1, 3) +
-      HiCriticalTask(4, 1, 3)
-
-    aValidSchedule(swapScheduler.schedule(tasks, 2))
-  }*/
