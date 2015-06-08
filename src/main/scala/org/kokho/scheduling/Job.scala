@@ -11,7 +11,6 @@ package org.kokho.scheduling
  *
  */
 trait Job {
-
   def release: Int
 
   def length: Int
@@ -20,7 +19,13 @@ trait Job {
 
   def releasedBy: Option[Task] = None
 
-  override def toString: String = s"Job($length->$release:$deadline)"
+  def isOfTask(task: Task): Boolean = releasedBy match {
+    case None => false
+    case Some(otherTask) => task == otherTask
+  }
+
+
+  override def toString: String = s"Job($length in $release:$deadline)"
 
 }
 

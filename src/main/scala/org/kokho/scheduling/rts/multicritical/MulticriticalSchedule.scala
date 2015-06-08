@@ -1,6 +1,6 @@
 package org.kokho.scheduling.rts.multicritical
 
-import org.kokho.scheduling.Schedule
+import org.kokho.scheduling.{Schedule, Task}
 
 /**
  * Created with IntelliJ IDEA on 6/5/15.
@@ -18,7 +18,7 @@ abstract class MulticriticalSchedule(val partition: Seq[Seq[MulticriticalTask]])
 
   protected val loTasks: Seq[LoCriticalTask] = tasks collect { case task: LoCriticalTask => task}
   protected val hiTasks: Seq[HiCriticalTask] = tasks collect { case task: HiCriticalTask => task}
-  protected val localSchedules: Seq[LocalSchedule] = partition.map(new LocalSchedule(_))
+  protected val localSchedules: Seq[LocalSchedule] = partition.map(new LocalSchedule(_)).toIndexedSeq
 
 
   if (tasks.size != loTasks.size + hiTasks.size) {
@@ -29,12 +29,11 @@ abstract class MulticriticalSchedule(val partition: Seq[Seq[MulticriticalTask]])
     )
   }
 
-  val taskToLocalSchedule: Map[MulticriticalTask, LocalSchedule] = {
-    for {
-      idx <- 0.until(arity)
-      task <- partition(idx)
-    } yield task -> localSchedules(idx)
-  }.toMap
+  def taskToLocalSchedule(task: Task): Option[LocalSchedule] =
+    localSchedules collectFirst {case sch if sch.isHost(task) => sch}
 
-
+  /**
+   * True if there is an unfinished job on one of the processors
+   */
+  override def isBusy: Boolean = localSchedules.count(_.isBusy) > 0
 }

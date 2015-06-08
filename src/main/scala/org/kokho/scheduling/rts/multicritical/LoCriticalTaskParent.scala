@@ -26,4 +26,6 @@ final class LoCriticalTaskParent (val period: Int,
 
     new LoCriticalTaskChild(this, time)
   }
+
+  override def isChildOf(thatTask: LoCriticalTask): Boolean = false
 }

@@ -22,6 +22,8 @@ trait LoCriticalTask extends MulticriticalTask {
 
   def earlyReleases: List[Int]
 
+  def isChildOf(thatTask: LoCriticalTask):Boolean
+
   /**
    * Returns a new LoCritical tasks that releases jobs starting from $time
    *
@@ -30,11 +32,16 @@ trait LoCriticalTask extends MulticriticalTask {
    */
   def shiftedTasks(time: Int): LoCriticalTask
 
-  def canReleaseEarlyJob(time: Int): Boolean = {
-    //calculate the early release time relative to the period
-    val relativeRelease = (time - offset) % period
+  /**
+   * Given absolute time, calculates the time relative to the period.
+   */
+  private def toRelativeTime(time: Int) = (time - offset) % period
 
-    earlyReleases.contains(relativeRelease)
+  def canReleaseEarlyJob(time: Int): Boolean = earlyReleases.contains(toRelativeTime(time))
+
+  def demand(time: Int): Int = {
+    val er = toRelativeTime(time)
+    execution - (execution * er ) / period
   }
 }
 

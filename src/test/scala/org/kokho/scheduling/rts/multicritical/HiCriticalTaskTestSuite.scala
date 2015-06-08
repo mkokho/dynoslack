@@ -1,6 +1,6 @@
 package org.kokho.scheduling.rts.multicritical
 
-import org.kokho.scheduling.{PeriodicTaskBehavior, TaskBehavior}
+import org.kokho.scheduling.{PeriodicTask, PeriodicTaskBehavior, TaskBehavior}
 import org.scalatest.FlatSpec
 
 /**
@@ -11,11 +11,11 @@ class HiCriticalTaskTestSuite extends FlatSpec with TaskBehavior with PeriodicTa
 
   def isOdd(x: Int) = x % 2 == 1
 
-  def hiCriticalTask = HiCriticalTask(10, 4, 6, isOdd)
+  def hiCriticalTask = HiCriticalTask(10, 4, 6, isOdd(_))
 
   "A high critical task" should behave like aTask(hiCriticalTask)
 
-  it should behave like aPeriodicTask(hiCriticalTask)
+  it should behave like aPeriodicTask(hiCriticalTask.asInstanceOf[PeriodicTask])
 
   it should "return jobs that take low WCET" in {
     val jobs = hiCriticalTask.jobs()

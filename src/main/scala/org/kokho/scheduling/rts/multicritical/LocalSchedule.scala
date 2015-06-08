@@ -1,6 +1,6 @@
 package org.kokho.scheduling.rts.multicritical
 
-import org.kokho.scheduling.{IdleJob, ActiveJob, ScheduledJob}
+import org.kokho.scheduling.{ActiveJob, IdleJob, ScheduledJob, Task}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -9,9 +9,9 @@ import scala.collection.mutable.ListBuffer
  * Created with IntelliJ IDEA on 6/3/15.
  * @author: Mikhail Kokho
  */
-class LocalSchedule(immutableTasks : Seq[MulticriticalTask]) extends Iterator[ScheduledJob] {
+class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[ScheduledJob] {
 
-  case class SlackUnit(deadline: Int){}
+  case class SlackUnit(deadline: Int) {}
 
   case class SlackPeriod(from: Int, to: Int) {
     require(from < to)
@@ -22,7 +22,20 @@ class LocalSchedule(immutableTasks : Seq[MulticriticalTask]) extends Iterator[Sc
   /**
    * For sorting sequences of active jobs
    */
-  implicit val activeJobOrdering: Ordering[ActiveJob] = Ordering.by(_.deadline)
+  implicit val activeJobOrdering: Ordering[ActiveJob] = //Ordering.by(_.deadline)
+    new Ordering[ActiveJob] {
+      override def compare(x: ActiveJob, y: ActiveJob): Int = {
+        val res = x.deadline - y.deadline
+        if (res == 0){
+          (x.job, y.job) match {
+            case (_:LoCriticalJob, _:HiCriticalJob) => 1
+            case (_:HiCriticalJob, _:LoCriticalJob) => -1
+            case _ => 0
+          }
+        }else
+          res
+      }
+    }
 
   private var time = 0
   private var activeJobs = ListBuffer[ActiveJob]()
@@ -31,7 +44,11 @@ class LocalSchedule(immutableTasks : Seq[MulticriticalTask]) extends Iterator[Sc
 
   private val tasks: mutable.Seq[MulticriticalTask] = mutable.Seq[MulticriticalTask]() ++ immutableTasks
 
-  def tasksForEarlyRelease: Seq[LoCriticalTask] = tasks collect { case loTask: LoCriticalTask if loTask.canReleaseEarlyJob(time) => loTask}
+  def tasksForEarlyRelease: Seq[LoCriticalTask] =
+    tasks collect {
+      case loTask: LoCriticalTask
+        if loTask.canReleaseEarlyJob(time) && !isActive(loTask) => loTask
+    }
 
   /**
    * Tests whether the schedule has active jobs that are started but not finished
@@ -48,6 +65,16 @@ class LocalSchedule(immutableTasks : Seq[MulticriticalTask]) extends Iterator[Sc
     }
   }
 
+  /**
+   * True if given task belongs to this schedule
+   */
+  def isHost(task: Task): Boolean = tasks.contains(task)
+
+  /**
+   * True if there is active job of the given task
+   */
+  private def isActive(task: MulticriticalTask) =
+    activeJobs.count(_.job.releasedBy.get == task) > 0
 
   def releaseEarlyJob(loTask: LoCriticalTask): ActiveJob = {
     val idx = tasks.indexOf(loTask)
@@ -58,7 +85,7 @@ class LocalSchedule(immutableTasks : Seq[MulticriticalTask]) extends Iterator[Sc
     val newTask = loTask.shiftedTasks(time)
     tasks(idx) = newTask
 
-    val newJob  = ActiveJob(newTask.jobs(time).next())
+    val newJob = ActiveJob(newTask.jobs(time).next())
     alreadyReleasedJobs = alreadyReleasedJobs + newJob
 
     newJob
@@ -90,19 +117,22 @@ class LocalSchedule(immutableTasks : Seq[MulticriticalTask]) extends Iterator[Sc
     val absoluteTime = time + relativeTime
 
     assert(cachedSlack.size <= 1)
-    if (cachedSlack.isEmpty || cachedSlack.keysIterator.next() < absoluteTime){
+    if (cachedSlack.isEmpty || cachedSlack.keysIterator.next() < absoluteTime) {
       cachedSlack = Map(absoluteTime -> copmuteSlackForecast(relativeTime))
     }
 
     cachedSlack(absoluteTime)
-//    copmuteSlackForecast(relativeTime)
+    //    copmuteSlackForecast(relativeTime)
   }
+
+  def slackDemand(task: LoCriticalTask) = if (isHost(task)) task.demand(time) else task.execution
+
 
   def hasSlackForTask(task: LoCriticalTask): Boolean = {
     //the $slackSeq contains periods of slack.
     //we accumulate sum of slack
     def accumulateSlack(amount: Int, deadline: Int): Int = {
-      val slackSeq = slackForecast(task.deadline) // change magic number 100 for actual limit
+      val slackSeq = slackForecast(task.deadline)
       slackSeq.foldLeft(0)((sum, period) => {
         if (period.from > deadline) sum
         else if (period.to > deadline) sum + deadline - period.from
@@ -111,7 +141,7 @@ class LocalSchedule(immutableTasks : Seq[MulticriticalTask]) extends Iterator[Sc
     }
 
     val availableSlack: Int = accumulateSlack(task.execution, time + task.deadline)
-    task.execution <= availableSlack
+    slackDemand(task) <= availableSlack
   }
 
   private def copmuteSlackForecast(limit: Int): Seq[SlackPeriod] = {
@@ -226,6 +256,6 @@ class LocalSchedule(immutableTasks : Seq[MulticriticalTask]) extends Iterator[Sc
 
   override def hasNext: Boolean = true
 
-  override def toString(): String = s"Schedule of $tasks"
+  override def toString(): String = s"Schedule($time) of $tasks"
 
 }

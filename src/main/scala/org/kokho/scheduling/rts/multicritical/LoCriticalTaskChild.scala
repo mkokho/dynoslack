@@ -25,6 +25,12 @@ private final case class LoCriticalTaskChild (parent: LoCriticalTaskParent, offs
 
   override def convertJob(job: PeriodicJob): JobType = new LoCriticalJob(this, job)
 
+
+  override def isChildOf(thatTask: LoCriticalTask): Boolean = thatTask match {
+    case t: LoCriticalTaskParent => this.parent == t
+    case t: LoCriticalTaskChild => this.parent == t.parent
+  }
+
   override def shiftedTasks(time: Int): LoCriticalTask = {
     require(canReleaseEarlyJob(time), s"Cannot release job at time $time")
 

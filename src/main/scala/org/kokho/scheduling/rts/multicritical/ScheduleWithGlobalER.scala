@@ -21,11 +21,11 @@ final class ScheduleWithGlobalER(partition: Seq[Seq[MulticriticalTask]])
     //now we just use random fit
     for {
       task <- tasksForER
-      scheduleWithSlack <- localSchedules if scheduleWithSlack.hasSlackForTask(task)
-    } {
-      val scheduleOfTask = taskToLocalSchedule.get(task).get
+      localSchedule <- localSchedules find (_.hasSlackForTask(task))
+      scheduleOfTask <- taskToLocalSchedule(task)
+    }{
       val job = scheduleOfTask.releaseEarlyJob(task)
-      scheduleWithSlack.insertJob(job)
+      localSchedule.insertJob(job)
     }
 
   }

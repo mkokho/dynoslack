@@ -17,6 +17,11 @@ abstract class Schedule extends Iterator[Seq[ScheduledJob]] {
   def partition: Seq[Seq[Task]]
 
   /**
+   * True if there is an unfinished job on one of the processors
+   */
+  def isBusy: Boolean
+
+  /**
    * Size of the tuples contained by this Schedule
    */
   def arity: Int = partition.size

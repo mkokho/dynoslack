@@ -17,5 +17,23 @@ case class ScheduledJob(from: Int, to: Int, job: Job) {
 
   def length = to - from
 
+  def extend() = new ScheduledJob(from, to+1, job)
+  
+  def merge(that: ScheduledJob) = {
+    require(that.job == this.job, "To be merged scheduled jobs must have the same underlying jobs")
+    require(this.to == that.from || this.from == that.to, "To be merged scheduled jobs must be consecutive")
+    new ScheduledJob(Math.min(this.from, that.from), Math.max(that.to, this.to), job)
+  }
+  
+  def isConsecutive(that: ScheduledJob) =
+    this.job == that.job && (this.to == that.from || that.to == this.from)
+
+  def isOfTask(task: Task): Boolean = this.job.isOfTask(task)
+//    releasedBy match {
+//    case None => false
+//    case Some(otherTask) => task == otherTask
+//  }
+
+
   override def toString: String = job + "->" + from + ":" + to
 }

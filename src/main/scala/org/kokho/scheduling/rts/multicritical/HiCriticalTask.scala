@@ -7,7 +7,7 @@ import org.kokho.scheduling._
  * @author: Mikhail Kokho
  */
 
-trait HiCriticalTask extends MulticriticalTask with SynchronousTask{
+trait HiCriticalTask extends MulticriticalTask with SynchronousTask {
 
   override type JobType = HiCriticalJob
 
@@ -22,11 +22,20 @@ trait HiCriticalTask extends MulticriticalTask with SynchronousTask{
 
 
 object HiCriticalTask {
+  def apply(name: String, period: Int, loExecution: Int, hiExecution: Int): HiCriticalTask =
+    apply(name, period, loExecution, hiExecution, _ => false)
 
-  def apply(period:Int, loExecution:Int, hiExecution: Int, lowJobs: Int => Boolean) =
+
+  def apply(name_ : String, period: Int, loExecution: Int, hiExecution: Int, lowJobs: Int => Boolean): HiCriticalTask =
     new HiCriticalTaskDefault(period, loExecution, hiExecution, lowJobs)
+      with NamedTask {
+      override def name: String = name_
+    }
 
-  def apply(period:Int, loExecution:Int, hiExecution: Int) =
-    new HiCriticalTaskDefault(period, loExecution, hiExecution, _ => false)
+  def apply(period: Int, loExecution: Int, hiExecution: Int): HiCriticalTask =
+    apply(period, loExecution, hiExecution, _ => false)
+
+  def apply(period: Int, loExecution: Int, hiExecution: Int, lowJobs: Int => Boolean): HiCriticalTask =
+    new HiCriticalTaskDefault(period, loExecution, hiExecution, lowJobs)
 
 }

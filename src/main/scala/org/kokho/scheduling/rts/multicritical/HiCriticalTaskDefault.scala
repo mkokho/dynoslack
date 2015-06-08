@@ -1,6 +1,6 @@
 package org.kokho.scheduling.rts.multicritical
 
-import org.kokho.scheduling.{PeriodicTask, PeriodicJob}
+import org.kokho.scheduling.{PeriodicJob, PeriodicTask}
 
 /**
  * Created with IntelliJ IDEA on 6/4/15.
@@ -16,13 +16,15 @@ import org.kokho.scheduling.{PeriodicTask, PeriodicJob}
  *                The jobs are indexed from 0.
  */
 
-final class HiCriticalTaskDefault (val period:Int,
+ class HiCriticalTaskDefault (val period:Int,
                              val loExecution:Int,
                              val hiExecution: Int,
                              val lowJobs: Int => Boolean = {_ => false})
 extends HiCriticalTask
 with PeriodicTask
 {
+
+  require(loExecution <= hiExecution, "Lo execution cannot be greater than hi execution")
 
   override def convertJob(job: PeriodicJob): JobType = HiCriticalJob(this, job)
 
