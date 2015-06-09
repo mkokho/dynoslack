@@ -4,9 +4,9 @@ import org.kokho.scheduling.{Job, JobProxy}
 
 /**
  * Swap job is executed partially on a processor
- * @param reclaimedSlack - how long the job is being executed on a processor
  */
-case class SwapJob(job: Job, reclaimedSlack: Int) extends JobProxy{
+case class SwapJob(job: Job) extends JobProxy{
+//  require(reclaimingPlan.nonEmpty, "Slack reclamation plan must be known in advance")
 
-  override def length: Int = reclaimedSlack
+//  override def length: Int = reclaimingPlan.head
 }

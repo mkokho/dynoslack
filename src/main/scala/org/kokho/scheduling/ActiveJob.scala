@@ -16,7 +16,7 @@ case class ActiveJob(job: Job) {
 
   def length = job.length
 
-  def deadline = job.deadline
+//  def deadline = job.deadline
 
   def isCompleted = remainingTime == 0
 

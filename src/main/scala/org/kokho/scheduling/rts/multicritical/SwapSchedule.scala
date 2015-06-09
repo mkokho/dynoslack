@@ -17,15 +17,12 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
   private val swapPoints: mutable.Queue[SwapPoint] = mutable.Queue()
 
   private val schedulesPermutation: mutable.Map[LocalSchedule, LocalSchedule] =
-    mutable.Map() ++ localSchedules.map(sch => sch -> sch)
+    mutable.LinkedHashMap() ++ localSchedules.map(sch => sch -> sch)
 
 
   private def releaseGlobally(task: LoCriticalTask, localSchedule: LocalSchedule) = {
-    println(task)
-    println(localSchedule)
     println("No global release yet")
   }
-
 
   private def allSchedulePairs() = schedulesPermutation.keysIterator.toList.combinations(2)
 
@@ -60,8 +57,11 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
 
   def doSwap(task: LoCriticalTask, swapPoint: SwapPoint): Unit = {
     swapPoints += swapPoint
-    val job = swapPoint.startSchedule.releaseEarlyJob(task)
-    println("releasing early job: "+ job)
+    val taskSchedule = taskToLocalSchedule(task).get
+    val job = taskSchedule.releaseEarlyJob(task)
+    println("releasing early job: "+ job + " at " + swapPoint)
+    val swapJob = SwapJob(job.job)
+    swapPoint.startSchedule.insertSwapJob(swapJob)
   }
 
   private def releaseSwap(task: LoCriticalTask) = {
@@ -88,7 +88,6 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
     }
   }
 
-
   def swapSchedules(): Unit = if (swapPoints.nonEmpty) {
     val swapPoint = swapPoints.head
     if (swapPoint.t == absoluteTime) {
@@ -100,26 +99,29 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
       val schB = schedulesPermutation(swapPoint.endSchedule)
 
       /* after:
-        swapPoint.startSchedule -> schB
-        swapPoint.endSchedule -> schA
+        swapPoint.startSchedule = schA -> schB
+        swapPoint.endSchedule = schB -> schA
       */
-      schedulesPermutation.update(swapPoint.startSchedule, schB)
-      schedulesPermutation.update(swapPoint.endSchedule, schA)
-      //
+      schedulesPermutation.update(schA, schB)
+      schedulesPermutation.update(schB, schA)
 
-//      val job = schA.extractSwapJob()
-//      schB.insertSwapJob(job)
+      //drop first swap point
+      swapPoints.dequeue()
+
+      //move swap job between schedules
+      val job = schA.extractSwapJob()
+      schB.insertSwapJob(job)
 
       //drop swap point
     }
   }
 
   override def next(): Seq[ScheduledJob] = {
-//    swapSchedules()
-//    slackReclamation()
+    swapSchedules()
+    slackReclamation()
 
     absoluteTime += 1
-    localSchedules.map(itr => itr.next())
+    schedulesPermutation.values.toList.map(itr => itr.next())
   }
 
   private case class SwapPoint(t: Int, startSchedule: LocalSchedule, endSchedule: LocalSchedule)

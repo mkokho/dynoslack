@@ -78,7 +78,7 @@ with MulticriticalScheduleBehavior {
 
   it should "swap and release globally" in {
     val analyzer = new ScheduleAnalyzer(swapGlobalSet, 12)
-//    analyzer.printSchedule()
+    analyzer.printSchedule()
 
   }
 
