@@ -25,8 +25,14 @@ trait Job {
   }
 
 
-  override def toString: String = s"Job($length in $release:$deadline)"
-
+  override def toString: String = releasedBy match {
+    case None => s"Job($length in $release:$deadline)"
+    case Some(task) =>
+      task.name  match {
+        case "NoName" => s"Job($length in $release:$deadline)"
+        case name: String => s"$name($length in $release:$deadline)"
+      }
+  }
 }
 
 

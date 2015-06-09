@@ -14,6 +14,9 @@ class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
     jobsStream.map(fiterAndMerge).flatten
   }
 
+  def printSchedule(): Unit = {
+    jobsStream map mergeScheduledJobs foreach println
+  }
 
   private def mergeScheduledJobs(jobsFlow: Seq[ScheduledJob]): Seq[ScheduledJob] = {
     val reverseSchedule = jobsFlow.foldLeft(List[ScheduledJob]())(
