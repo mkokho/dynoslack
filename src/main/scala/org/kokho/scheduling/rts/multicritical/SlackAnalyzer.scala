@@ -1,8 +1,9 @@
 package org.kokho.scheduling.rts.multicritical
 
 /**
- * Created by Mikhail Kokho on 6/9/2015.
- */
+ * Created with IntelliJ IDEA on 6/9/2015.
+ * @author: Mikhail Kokho
+  */
 class SlackAnalyzer(val seq: Seq[SlackPeriod], val start: Int, val end: Int) {
   assert(seq.sliding(2).count(pair => pair.size == 2 && pair(0).to >= pair(1).from) == 0)
 
@@ -12,6 +13,7 @@ class SlackAnalyzer(val seq: Seq[SlackPeriod], val start: Int, val end: Int) {
   private var _slackAhead = totalSlack
   private var idx = 0
   private var relativeTime = 0
+  private var _slackTime = List[Int]()
 
   private def absoluteTime = relativeTime + start
 
@@ -20,6 +22,24 @@ class SlackAnalyzer(val seq: Seq[SlackPeriod], val start: Int, val end: Int) {
   def slackBehind = this._slackBehind
 
   def slackAhead = this._slackAhead
+
+  def slackTimes = _slackTime.reverse
+
+  def slackUnitsBehind(t: Int):Seq[Int] = for {
+    period <- seq
+    unit <- period.toSlackUnits
+    if unit >= start && unit < t
+  } yield unit
+
+
+  def slackUnitsAhead(t: Int):Seq[Int] =
+    for {
+      period <- seq
+      unit <- period.toSlackUnits
+      if unit >= t && unit < end
+    } yield unit
+
+
 
   def isSwapAvailable = {
     idx < seq.size && absoluteTime >= slack.from && absoluteTime <= slack.to
@@ -39,6 +59,7 @@ class SlackAnalyzer(val seq: Seq[SlackPeriod], val start: Int, val end: Int) {
       } else if (absoluteTime <= slack.to) {
         //we have skipped one unit of slack
         _slackBehind += 1
+        _slackTime = (start+relativeTime-1) :: _slackTime
         _slackAhead -= 1
       } else {
         //we have exited the current slack period

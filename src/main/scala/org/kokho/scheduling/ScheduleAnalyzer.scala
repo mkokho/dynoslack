@@ -1,12 +1,15 @@
 package org.kokho.scheduling
 
 /**
- * Created by Mikhail Kokho on 6/7/2015.
- */
+ * Created with IntelliJ IDEA on 6/7/2015.
+ * @author: Mikhail Kokho
+  */
 class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
   private val jobsStream = toJobSequences(schedule, memory)
 
-  def findJobs(task: Task):Seq[ScheduledJob] = {
+  def extend(until: Int):ScheduleAnalyzer = if (until < memory) this else new ScheduleAnalyzer(schedule, until)
+
+  def findJobs(task: Task): Seq[ScheduledJob] = {
     require(schedule.tasks.contains(task), "There is no such task in the schedule")
 
     def fiterAndMerge(seq: Seq[ScheduledJob]) = mergeScheduledJobs(seq.filter(_.isOfTask(task)))
@@ -16,6 +19,43 @@ class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
 
   def printSchedule(): Unit = {
     jobsStream map mergeScheduledJobs foreach println
+  }
+
+  def jobStream(idx: Int): Seq[ScheduledJob] = {
+    require(idx < jobsStream.size)
+    mergeScheduledJobs(jobsStream(idx))
+  }
+
+  def findUncompletedJobs(): Seq[Seq[Job]] = jobsStream.map(findUncompletedJobs)
+
+  def findUncompletedJobs(idx: Int): Seq[Job] = {
+    require(idx < jobsStream.size)
+    findUncompletedJobs(jobsStream(idx))
+  }
+
+  def findOverdueJobs(): Seq[Seq[ScheduledJob]] = jobsStream.map(findOverdueJobs)
+
+  def findOverdueJobs(idx: Int): Seq[ScheduledJob] = {
+    require(idx < jobsStream.size)
+    findOverdueJobs(jobsStream(idx))
+  }
+
+
+  private def findOverdueJobs(jobs: Seq[ScheduledJob]) = {
+    jobs.filter(scheduledJob => scheduledJob.to > scheduledJob.job.deadline)
+  }
+
+
+  private def findUncompletedJobs(jobs: Seq[ScheduledJob]) = {
+    val sGrouped: Map[Job, Int] = jobs.groupBy(_.job).mapValues(ts => ts.foldLeft(0)(_ + _.length))
+
+    {
+      for (
+        j <- sGrouped.keys
+        if j != IdleJob
+        if j.length != sGrouped(j)
+      ) yield j
+    }.toSeq
   }
 
   private def mergeScheduledJobs(jobsFlow: Seq[ScheduledJob]): Seq[ScheduledJob] = {

@@ -32,7 +32,7 @@ final class ScheduleWithGlobalER(partition: Seq[Seq[MulticriticalTask]])
 
   override def next(): Seq[ScheduledJob] = {
     releaseEarlyJobsGlobally()
-    localSchedules.map(itr => itr.next())
+    localSchedules.map(itr => itr.next()).toList
   }
 
 

@@ -51,12 +51,14 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
    * @return true if there is a job that is being executed
    */
   def isBusy: Boolean = {
-    if (activeJobs.isEmpty) false
+    if (globalSwapJob.isDefined) true
+    else if (activeJobs.isEmpty) false
     else {
-      val aJob = activeJobs.head
-      assert(!aJob.isCompleted) //we don't have completed job at the beginning
-      assert(aJob.isBusy || activeJobs.drop(1).filter(_.isBusy).isEmpty) //there are no busy jobs if the first job is not busy
-      aJob.isBusy
+      activeJobs.exists(_.isBusy)
+//      val aJob = activeJobs.head
+//      assert(!aJob.isCompleted) //we don't have completed job at the beginning
+//      assert(aJob.isBusy || activeJobs.drop(1).filter(_.isBusy).isEmpty) //there are no busy jobs if the first job is not busy
+//      aJob.isBusy
     }
   }
 
@@ -93,43 +95,38 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
     //there is also static slack, that will appear later
     //we consume as much dynamic slack as we have
     //@TODO we might consume too much, is this schedule is host for the given task
-    assert(SlackPeriod.totalSlack(slackForecast(job.job.deadline), job.job.deadline) >= job.length, "Swap scheduling: trying to reclaim more than available")
+//    assert(SlackPeriod.totalSlack(slackForecast(job.job.deadline), job.job.deadline) >= job.job, s"Job $job is trying to reclaim more than available")
 
     slackJobs.trimStart(job.length)
-    cachedSlack = Map.empty
+    cachedSlack = None
 
     activeJobs += job
     activeJobs = activeJobs.sorted
   }
 
+
   def insertSwapJob(job: SwapJob): Unit = {
+    assert(globalSwapJob.isEmpty, "The schedule already has a swap job")
     globalSwapJob = Some(job)
-//    insertJob(new ActiveJob(job))
+    cachedSlack = None
+    slackJobs.trimStart(job.executionPlan.length)
   }
 
-  def extractSwapJob(): SwapJob = {
-    //    val swapJobOption = activeJobs.find(_.job.isInstanceOf[SwapJob])
-
-    //swap job is wrapped in an active job.
-    //we delete copmleted job at the end of an iteration
-    //therefore a swap job should have been completed on this processor
-    //    assert(globalSwapJob.isDefined, "Swap job has not been completed here")
-
-    //when inserting, we save the reference to the swap job
-    //if a swap job has not been inserted, we are not able to extract it
+/*  def extractSwapJob(): SwapJob = {
     assert(globalSwapJob.isDefined, "Swap job has not been inserted ")
 
     val j = globalSwapJob.get
     globalSwapJob = None
     j
-  }
+  }*/
 
 
   /**
    * Keeps computed slack forecast.
    * If globalTime does equal the first element in the tuple, we update cache
    */
-  private var cachedSlack: Map[Int, Seq[SlackPeriod]] = Map.empty
+//  private var cachedSlack: Map[Int, Seq[SlackPeriod]] = Map.empty
+  private var cachedSlack: Option[(Int, Seq[SlackPeriod])] = None
 
 
   /**
@@ -141,12 +138,11 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
   def slackForecast(relativeTime: Int): Seq[SlackPeriod] = {
     val absoluteTime = globalTime + relativeTime
 
-    assert(cachedSlack.size <= 1)
-    if (cachedSlack.isEmpty || cachedSlack.keysIterator.next() < absoluteTime) {
-      cachedSlack = Map(absoluteTime -> copmuteSlackForecast(relativeTime))
+    if (cachedSlack.isEmpty || cachedSlack.get._1 < absoluteTime) {
+      cachedSlack = Some(absoluteTime, copmuteSlackForecast(relativeTime))
     }
 
-    cachedSlack(absoluteTime)
+    cachedSlack.get._2
   }
 
   def slackDemand(task: LoCriticalTask) = if (isHost(task)) task.demand(globalTime) else task.execution
@@ -170,14 +166,17 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
       var copySlackUnits = slackJobs.clone().toList
 
       def executeSlack(t: Int) {
-        slackSeq = slackSeq match {
-          case Nil => List(SlackPeriod(t, t + 1))
-          case head :: tail if t == head.to => SlackPeriod(head.from, t + 1) :: tail
-          case _ => SlackPeriod(t, t + 1) :: slackSeq
-        }
+        //swap job also takes slack
+        if (!globalSwapJob.map(_.executionPlan).getOrElse(List.empty).contains(t)) {
+          slackSeq = slackSeq match {
+            case Nil => List(SlackPeriod(t, t + 1))
+            case head :: tail if t == head.to => SlackPeriod(head.from, t + 1) :: tail
+            case _ => SlackPeriod(t, t + 1) :: slackSeq
+          }
 
-        if (copySlackUnits.nonEmpty)
-          copySlackUnits = copySlackUnits.tail
+          if (copySlackUnits.nonEmpty)
+            copySlackUnits = copySlackUnits.tail
+        }
       }
 
       def executeJob() {
@@ -245,44 +244,48 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
 
 
   private def executeActiveJob(): Job = {
-    val firstActiveJob = activeJobs.head.execute()
-    activeJobs.trimStart(1)
+    val noSlackPush = globalSwapJob.isDefined
 
-    if (firstActiveJob.isCompleted) {
-      firstActiveJob.job match {
-        case hiJob: HiCriticalJob => if (hiJob.takeLowWcet) generateSlack(hiJob)
-        case _ =>
-      }
-    } else {
-      activeJobs.prepend(firstActiveJob)
-    }
-
-    pushSlack(firstActiveJob.job)
-    firstActiveJob.job
-  }
-
-  private def executeWithSwapJob(swapJob: SwapJob): Job = {
-    if (activeJobs.isEmpty) {
-      slackJobs.trimStart(1)
-      swapJob.job
-    } else if (slackJobs.isEmpty) {
-      executeActiveJob()
-    } else {
-      val firstActiveJob = activeJobs.head
-      val firstSlack = slackJobs.head
-      if (firstSlack.deadline < firstActiveJob.job.deadline) {
-        slackJobs.trimStart(1)
-        swapJob.job
-      } else {
-        executeActiveJob()
-      }
-    }
-  }
-
-  private def executeWithoutSwapJob(): Job = {
     if (activeJobs.isEmpty) {
       if (slackJobs.nonEmpty) slackJobs.trimStart(1)
       IdleJob
+    } else {
+      if (noSlackPush && slackJobs.nonEmpty && slackJobs.head.deadline < activeJobs.head.job.deadline) {
+        slackJobs.trimStart(1)
+        IdleJob
+      } else {
+        val firstActiveJob = activeJobs.head.execute()
+        activeJobs.trimStart(1)
+
+        if (firstActiveJob.isCompleted) {
+          firstActiveJob.job match {
+            case hiJob: HiCriticalJob => if (hiJob.takeLowWcet) generateSlack(hiJob)
+            case _ =>
+          }
+        } else {
+          activeJobs.prepend(firstActiveJob)
+        }
+
+        pushSlack(firstActiveJob.job)
+        firstActiveJob.job
+      }
+    }
+  }
+
+  private def executeWithSwapJob(swapJob: SwapJob): Job = {
+    //swap job has higner priority than any job
+    //but also swap job is executed according to the precomputed plan
+    //therefore if its not time to execute swap job, we execute active job
+
+    assert(!swapJob.isComplete, "Completed swap job should be dropped")
+    if (swapJob.executionPlan.head == globalTime) {
+      val nextSwapJob = swapJob.execute(globalTime)
+      if (!nextSwapJob.isComplete)
+        globalSwapJob = Some(nextSwapJob)
+      else
+        globalSwapJob = None
+
+      nextSwapJob.job
     } else {
       executeActiveJob()
     }
@@ -297,7 +300,7 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
     }
 
     val nextJob = globalSwapJob match {
-      case None => executeWithoutSwapJob()
+      case None => executeActiveJob()
       case Some(sj) => executeWithSwapJob(sj)
     }
 

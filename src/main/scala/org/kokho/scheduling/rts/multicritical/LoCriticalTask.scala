@@ -1,5 +1,7 @@
 package org.kokho.scheduling.rts.multicritical
 
+import org.kokho.scheduling.NamedTask
+
 
 /**
  * Created with IntelliJ IDEA on 5/28/15.
@@ -47,6 +49,12 @@ trait LoCriticalTask extends MulticriticalTask {
 
 
 object LoCriticalTask {
+
+  def apply(name_ : String, period: Int, loExecution: Int, earlyReleases: List[Int]): LoCriticalTask =
+    new LoCriticalTaskParent(period, loExecution, earlyReleases)
+      with NamedTask {
+      override def name: String = name_
+    }
 
   def apply(period: Int, loExecution: Int): LoCriticalTask = apply(period, loExecution, loExecution.until(period).toList)
 

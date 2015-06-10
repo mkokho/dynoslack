@@ -9,9 +9,6 @@ import org.kokho.scheduling.{PeriodicJob, PeriodicTask}
 
 /**
  * Children of the same parent with the same offset are equal
- *
- * @param parent
- * @param offset
  */
 private final case class LoCriticalTaskChild (parent: LoCriticalTaskParent, offset: Int)
   extends LoCriticalTask
@@ -25,6 +22,7 @@ private final case class LoCriticalTaskChild (parent: LoCriticalTaskParent, offs
 
   override def convertJob(job: PeriodicJob): JobType = new LoCriticalJob(this, job)
 
+  override def name: String = parent.name
 
   override def isChildOf(thatTask: LoCriticalTask): Boolean = thatTask match {
     case t: LoCriticalTaskParent => this.parent == t

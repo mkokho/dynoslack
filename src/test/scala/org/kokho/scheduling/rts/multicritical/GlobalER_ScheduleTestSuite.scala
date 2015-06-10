@@ -4,8 +4,9 @@ import org.kokho.scheduling.{Job, ScheduleAnalyzer, ScheduledJob}
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
- * Created by Mikhail Kokho on 6/7/2015.
- */
+ * Created with IntelliJ IDEA on 6/7/2015.
+ * @author: Mikhail Kokho
+  */
 class GlobalER_ScheduleTestSuite extends FlatSpec
 with Matchers
 with MulticriticalScheduleBehavior {
@@ -24,7 +25,7 @@ with MulticriticalScheduleBehavior {
 
   it should behave like aMulticriticalSchedule(simple2coreSet)
 
-  ignore should "release jobs globally" in {
+  it should "release jobs globally" in {
     val analyzer = new ScheduleAnalyzer(simple2coreSet, 6)
     val loTask = analyzer.schedule.tasks.collectFirst({ case t: LoCriticalTask => t}).get
 
@@ -38,7 +39,7 @@ with MulticriticalScheduleBehavior {
   }
 
 
-  ignore should "not release an early job twice" in {
+  it should "not release an early job twice" in {
     val taskA = HiCriticalTask("A", 4, 2, 2)
     val taskB = HiCriticalTask("B", 4, 3, 3)
     val taskL = LoCriticalTask(4, 1, List(3))

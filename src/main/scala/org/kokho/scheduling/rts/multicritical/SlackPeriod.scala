@@ -1,12 +1,15 @@
 package org.kokho.scheduling.rts.multicritical
 
 /**
- * Created by Mikhail Kokho on 6/9/2015.
- */
+ * Created with IntelliJ IDEA on 6/9/2015.
+ * @author: Mikhail Kokho
+  */
 class SlackPeriod(val from: Int, val to: Int) {
   require(from <= to)
 
   def length = to - from
+
+  def toSlackUnits: Seq[Int] = from.until(to)
 
   override def toString: String = s"Slack($from:$to)"
 }

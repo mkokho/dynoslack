@@ -6,7 +6,7 @@ import org.kokho.scheduling.{PeriodicJob, PeriodicTask}
  * Created with IntelliJ IDEA on 6/4/15.
  * @author: Mikhail Kokho
  */
-final class LoCriticalTaskParent (val period: Int,
+class LoCriticalTaskParent (val period: Int,
                                    val execution: Int,
                                    val earlyReleases: List[Int])
   extends LoCriticalTask

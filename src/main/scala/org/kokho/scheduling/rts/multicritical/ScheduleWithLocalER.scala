@@ -26,7 +26,7 @@ final class ScheduleWithLocalER(partition: Seq[Seq[MulticriticalTask]])
 
   override def next(): Seq[ScheduledJob] = {
     releaseEarlyJobsLocally()
-    localSchedules.map(itr => itr.next())
+    localSchedules.map(itr => itr.next()).toList
   }
 
 
