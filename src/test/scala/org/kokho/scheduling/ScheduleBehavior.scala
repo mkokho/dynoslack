@@ -5,11 +5,13 @@ import org.scalatest.FlatSpec
 /**
  * Created with IntelliJ IDEA on 6/1/2015.
  * @author: Mikhail Kokho
-  */
+ */
 trait ScheduleBehavior {
   this: FlatSpec =>
 
   def validityCheck(analyzer: ScheduleAnalyzer): Unit = {
+    doubleReleaseCheck(analyzer)
+    migrationCheck(analyzer)
     overdueCheck(analyzer)
     uncompletedCheck(analyzer)
   }
@@ -32,6 +34,25 @@ trait ScheduleBehavior {
     }
   }
 
+  def migrationCheck(analyzer: ScheduleAnalyzer): Unit = {
+    val res = analyzer.findMigratedJobs()
+    if (res.nonEmpty) {
+      val failedJob: Job = res.get
+      val debug = analyzer.debugInfo(failedJob.release - 20, failedJob.relativeDeadline+20)
+      fail(s"There is a migrated job: $res\n$debug")
+    }
+  }
+
+  def doubleReleaseCheck(analyzer: ScheduleAnalyzer): Unit = {
+    val res = analyzer.findDoubleReleases()
+    if (res.nonEmpty) {
+      val failedJob: Job = res.get
+      val debug = analyzer.debugInfo(failedJob.release, failedJob.relativeDeadline)
+      fail(s"There is a double release job: $res\n$debug")
+    }
+  }
+
+
   def aSchedule(schedule: Schedule): Unit = {
     val analyzer = new ScheduleAnalyzer(schedule)
 
@@ -43,9 +64,17 @@ trait ScheduleBehavior {
       overdueCheck(analyzer)
     }
 
-//    it should "contain at least one job of each task" in {
-//
-//    }
+    it should "not contain migrated jobs" in {
+      migrationCheck(analyzer)
+    }
+
+    it should "not have double released jobs" in {
+      doubleReleaseCheck(analyzer)
+    }
+
+    //    it should "contain at least one job of each task" in {
+    //
+    //    }
 
   }
 

@@ -16,7 +16,7 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
 
   private val swapPoints: mutable.Queue[SwapPoint] = mutable.Queue()
 
-  private val schedulesPermutation: Array[Int] = 0.until(arity).toArray
+  private val schedulesPermutation: Array[LocalSchedule] = localSchedules.toArray
 
 
   private def releaseGlobally(task: LoCriticalTask, destinationSchedule: LocalSchedule) = {
@@ -42,7 +42,9 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
       if (t - absoluteTime >= task.deadline) None
       else {
         states foreach (_.advanceTime())
-        if (!states.forall(_.isSwapAvailable)) findHelper(states, t + 1)
+        if (!states.forall(_.isSwapAvailable)
+          || startSchedule.isFutureBusy(t)
+          || endSchedule.isFutureBusy(t)) findHelper(states, t + 1)
         else states match {
           case a :: b :: _ =>
             if (a.slackBehind + b.slackAhead >= task.execution)
@@ -55,7 +57,10 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
       }
     }
 
-    findHelper(states, absoluteTime + 1)
+    if (states.map(_.totalSlack).sum < task.execution)
+      None
+    else
+      findHelper(states, absoluteTime + 1)
   }
 
   def planSwap(task: LoCriticalTask, swapPoint: SwapPoint): Unit = {
@@ -67,8 +72,8 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
     val planStart = swapPoint.executionPlan.takeWhile(_ < swapPoint.t).toList
     val planEnd = swapPoint.executionPlan.dropWhile(_ < swapPoint.t).take(job.length - planStart.size).toList
 
-    swapPoint.startSchedule.insertSwapJob(SwapJob(job, planStart))
-    swapPoint.endSchedule.insertSwapJob(SwapJob(job, planEnd))
+    swapPoint.startSchedule.insertSwapJob(SwapJob(job, swapPoint.t, planStart))
+    swapPoint.endSchedule.insertSwapJob(SwapJob(job, swapPoint.t, planEnd))
   }
 
   private def releaseSwap(task: LoCriticalTask) = {
@@ -87,25 +92,20 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
   def swapSchedules(): Unit = if (swapPoints.nonEmpty) {
     val swapPoint = swapPoints.head
     if (swapPoint.t == absoluteTime) {
-      val idxOfStartSchedule = localSchedules.indexOf(swapPoint.startSchedule)
-      val idxOfEndSchedule = localSchedules.indexOf(swapPoint.endSchedule)
-      val processorOfStartSchedule = schedulesPermutation(idxOfStartSchedule)
-      val processorOfEndSchedule = schedulesPermutation(idxOfEndSchedule)
-      schedulesPermutation(idxOfStartSchedule) = processorOfEndSchedule
-      schedulesPermutation(idxOfEndSchedule) = processorOfStartSchedule
+      val idxOfStartSchedule = schedulesPermutation.indexOf(swapPoint.startSchedule)
+      val idxOfEndSchedule = schedulesPermutation.indexOf(swapPoint.endSchedule)
+      schedulesPermutation(idxOfStartSchedule) = swapPoint.endSchedule
+      schedulesPermutation(idxOfEndSchedule) = swapPoint.startSchedule
 
-//      move swap job between schedules
-//      val job = swapPoint.startSchedule.extractSwapJob()
-//      swapPoint.endSchedule.insertSwapJob(job)
-      //drop first swap point
       swapPoints.dequeue()
-
     }
   }
 
 
   private def slackReclamation() = {
-    val tasksForER = localSchedules.map(_.tasksForEarlyRelease).flatten
+    val tasksForER = localSchedules
+      .map(_.tasksForEarlyRelease).flatten
+      .filter(task => localSchedules.forall(!_.isSwapActive(task)))
 
     for (task <- tasksForER) {
       localSchedules find (_.hasSlackForTask(task)) match {
@@ -115,16 +115,32 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
     }
   }
 
+  private def debug(from: Int, to: Int) = {
+    if (absoluteTime >= from && absoluteTime < to) {
+      println(s"Debug info at time $absoluteTime")
+      val len = to - from
+      localSchedules foreach (sch => {
+        val forecast: Seq[SlackPeriod] = sch.slackForecast(len)
+        val totalSlack = SlackPeriod.totalSlack(forecast, to)
+        println(s"Total slack $totalSlack in $forecast")
+      })
+      println(s"Swap points: $swapPoints")
+      println(" - - - - - ")
+    }
+  }
+
   override def next(): Seq[ScheduledJob] = {
+    //    debug(396, 416)
     swapSchedules()
     slackReclamation()
 
     absoluteTime += 1
 
-    schedulesPermutation.map(localSchedules(_)).map(itr => itr.next()).toList
+    //    schedulesPermutation.map(localSchedules(_)).map(itr => itr.next()).toList
+    schedulesPermutation.map(itr => itr.next()).toList
   }
 
-  private case class SwapPoint(t: Int, executionPlan:Seq[Int], startSchedule: LocalSchedule, endSchedule: LocalSchedule) {
+  private case class SwapPoint(t: Int, executionPlan: Seq[Int], startSchedule: LocalSchedule, endSchedule: LocalSchedule) {
 
     def slackBehind = executionPlan.count(_ < t)
 

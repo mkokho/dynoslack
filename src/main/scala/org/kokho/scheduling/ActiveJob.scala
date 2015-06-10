@@ -12,22 +12,27 @@ package org.kokho.scheduling
  * @param job a job that awaits its turn for execution on a processor
  */
 case class ActiveJob(job: Job) {
-  private var remainingTime = job.length
+//  private var remainingTime = job.length
+  private var _elapsedTime = 0
 
   def length = job.length
 
+  def elapsedTime = _elapsedTime
+
 //  def deadline = job.deadline
 
-  def isCompleted = remainingTime == 0
+//  def isCompleted = remainingTime == 0
+  def isCompleted = _elapsedTime >= job.length
 
-  def isBusy = !isCompleted && remainingTime < job.length
+//  def isBusy = !isCompleted && remainingTime < job.length
+  def isBusy = !isCompleted && _elapsedTime > 0
 
   def execute(): ActiveJob = {
-    if (isCompleted)
-      throw new IllegalStateException(s"The job $job has been completed. Cannot execute it")
+//    if (isCompleted)
+//      throw new IllegalStateException(s"The job $job has been completed. Cannot execute it")
 
     val that = ActiveJob(job)
-    that.remainingTime = remainingTime - 1
+    that._elapsedTime = _elapsedTime + 1
     that
   }
 }

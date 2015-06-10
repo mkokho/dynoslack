@@ -67,6 +67,9 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
    */
   def isHost(task: Task): Boolean = tasks.contains(task)
 
+  def isSwapActive(task: Task): Boolean =
+    globalSwapJob.isDefined && globalSwapJob.get.job.isOfTask(task)
+
   /**
    * True if there is active job of the given task
    */
@@ -112,20 +115,10 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
     slackJobs.trimStart(job.executionPlan.length)
   }
 
-/*  def extractSwapJob(): SwapJob = {
-    assert(globalSwapJob.isDefined, "Swap job has not been inserted ")
-
-    val j = globalSwapJob.get
-    globalSwapJob = None
-    j
-  }*/
-
-
   /**
    * Keeps computed slack forecast.
    * If globalTime does equal the first element in the tuple, we update cache
    */
-//  private var cachedSlack: Map[Int, Seq[SlackPeriod]] = Map.empty
   private var cachedSlack: Option[(Int, Seq[SlackPeriod])] = None
 
 
@@ -145,7 +138,12 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
     cachedSlack.get._2
   }
 
-  def slackDemand(task: LoCriticalTask) = if (isHost(task)) task.demand(globalTime) else task.execution
+  def slackDemand(task: LoCriticalTask) = globalSwapJob match {
+    case None => if (isHost(task)) task.demand(globalTime) else task.execution
+    case Some(SwapJob(_, swapTime, _)) =>
+      if (isHost(task) && globalTime + task.period < swapTime) task.demand(globalTime)
+        else task.execution
+  }
 
 
   def hasSlackForTask(task: LoCriticalTask): Boolean = {
@@ -157,6 +155,10 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
     slackDemand(task) <= availableSlack
   }
 
+  private var freeFutureTime:List[Int] = List[Int]()
+
+  def isFutureBusy(t: Int) = freeFutureTime.contains(t)
+
   private def copmuteSlackForecast(limit: Int): Seq[SlackPeriod] = {
     assert(limit >= 0)
 
@@ -164,10 +166,11 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
       var slackSeq: List[SlackPeriod] = List()
       var copyActiveJobs = activeJobs.clone().toList
       var copySlackUnits = slackJobs.clone().toList
+      freeFutureTime = List()
 
       def executeSlack(t: Int) {
         //swap job also takes slack
-        if (!globalSwapJob.map(_.executionPlan).getOrElse(List.empty).contains(t)) {
+        if (!globalSwapJob.exists(_.executionPlan.contains(t))) {
           slackSeq = slackSeq match {
             case Nil => List(SlackPeriod(t, t + 1))
             case head :: tail if t == head.to => SlackPeriod(head.from, t + 1) :: tail
@@ -181,7 +184,11 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
 
       def executeJob() {
         val newJob = copyActiveJobs.head.execute()
-        if (newJob.isCompleted)
+        val completed = newJob.job match {
+          case j: HiCriticalJob => newJob.elapsedTime >= j.hiWcet
+          case _ => newJob.isCompleted
+        }
+        if (completed)
           copyActiveJobs = copyActiveJobs.tail
         else
           copyActiveJobs = newJob :: copyActiveJobs.tail
@@ -192,20 +199,26 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
           slackSeq = SlackPeriod(t, t) :: slackSeq
       }
 
-      for (t <- globalTime.until(globalTime + limit)) {
+      val bound = globalSwapJob match {
+        case None => globalTime + limit
+        case Some(SwapJob(_, swapTime, _)) => Math.min(swapTime, globalTime + limit)
+      }
+
+      for (t <- globalTime.until(bound)) {
         copyActiveJobs = (copyActiveJobs ++ releaseJobs(t)).sorted
+        if (copyActiveJobs.exists(_.isBusy)) freeFutureTime = t :: freeFutureTime
 
         (copyActiveJobs, copySlackUnits) match {
           case (Nil, Nil) => executeSlack(t)
           case (Nil, _) => executeSlack(t)
           case (jHead :: _, Nil) =>
-            if (!jHead.isBusy) addSwapPoint(t)
+            if (!copyActiveJobs.exists(_.isBusy)) addSwapPoint(t)
             executeJob()
           case (jHead :: _, sHead :: _) =>
             if (sHead.deadline < jHead.job.deadline) {
               executeSlack(t)
             } else {
-              if (!jHead.isBusy) addSwapPoint(t)
+              if (!copyActiveJobs.exists(_.isBusy)) addSwapPoint(t)
               executeJob()
             }
         }

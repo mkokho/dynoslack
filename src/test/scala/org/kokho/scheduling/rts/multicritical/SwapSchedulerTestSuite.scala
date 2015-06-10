@@ -89,8 +89,8 @@ with MulticriticalScheduleBehavior {
 
   val swap3Set = (
     swapSet._1,
-    swapSet._2,
-    swapSet._2
+    Seq(HiCriticalTask("C", 9, 7, 7)),
+    Seq(HiCriticalTask("D", 9, 7, 7))
     )
 
   it should "release swap job only once" in {
@@ -169,8 +169,6 @@ with MulticriticalScheduleBehavior {
     */
 
     def doCheck(analyzer: ScheduleAnalyzer) {
-      analyzer.printSchedule()
-
       val jobsX = analyzer.findJobs(loTaskX)
       val jobsY = analyzer.findJobs(loTaskY)
 
@@ -190,9 +188,8 @@ with MulticriticalScheduleBehavior {
     val taskset = (Seq(loTaskX, loTaskY, hiTaskA), Seq(taskB, taskC), Seq(taskD, taskE))
     doCheck(new ScheduleAnalyzer(taskset, 1500))
 
-//    val taskSetReverse = (taskset._1.reverse, taskset._2, taskset._3)
-//    doCheck(new ScheduleAnalyzer(taskSetReverse, 20))
-
+    val taskSetReverse = (taskset._1.reverse, taskset._2, taskset._3)
+    doCheck(new ScheduleAnalyzer(taskSetReverse, 1500))
   }
 }
 

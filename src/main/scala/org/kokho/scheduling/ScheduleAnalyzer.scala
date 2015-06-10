@@ -1,14 +1,12 @@
 package org.kokho.scheduling
 
-import org.kokho.scheduling.rts.multicritical.MulticriticalTask
-
-import scala.collection.LinearSeq
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.immutable.HashSet
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Created with IntelliJ IDEA on 6/7/2015.
  * @author: Mikhail Kokho
-  */
+ */
 class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
   private val jobsStream = toJobSequences(schedule, memory)
 
@@ -38,6 +36,43 @@ class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
     mergeScheduledJobs(jobsStream(idx))
   }
 
+  def findDoubleReleases(): Option[Job] = {
+    val allJobs: Seq[ScheduledJob] = jobsStream.flatten
+        .filter(_.job != IdleJob)
+        .sortWith(_.to < _.to)
+
+    val taskToJobs = allJobs.groupBy(_.job.releasedBy.get)
+    var doubleRelease: Option[Job] = None
+    for {
+      (task, jobs) <- taskToJobs if doubleRelease.isEmpty
+      (job, allocation) <- jobs.groupBy(_.job)
+      pair <- allocation.sliding(2) if pair.size > 1
+    } {
+      if (pair(0).to > pair(1).from) {
+        doubleRelease = Some(job)
+      }
+    }
+
+    doubleRelease
+  }
+
+  def findMigratedJobs(): Option[Job] = {
+    val hashSets: Seq[HashSet[Job]] = jobsStream.map(seq =>
+      HashSet() ++ seq.iterator.map(_.job).filter(_ != IdleJob)
+    )
+
+    var migratedJob: Option[Job] = None
+    for {
+      set <- hashSets
+      job <- set if migratedJob.isEmpty
+      otherSet <- hashSets if set != otherSet
+    } {
+      if (otherSet.contains(job)) migratedJob = Some(job)
+    }
+
+    migratedJob
+  }
+
   def findUncompletedJobs(): Seq[Seq[Job]] = jobsStream.map(findUncompletedJobs)
 
   def findUncompletedJobs(idx: Int): Seq[Job] = {
@@ -51,7 +86,6 @@ class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
     require(idx < jobsStream.size)
     findOverdueJobs(jobsStream(idx))
   }
-
 
   private def findOverdueJobs(jobs: Seq[ScheduledJob]) = {
     jobs.filter(scheduledJob => scheduledJob.to > scheduledJob.job.deadline)
@@ -82,6 +116,14 @@ class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
     reverseSchedule.reverse
   }
 
+  private def isOrdered(seq: Seq[ScheduledJob]) = {
+   val res = seq.sliding(2).find(pair => pair(0).to > pair(1).from)
+    res match {
+      case None => true
+      case Some(pair) => false
+    }
+  }
+
   /**
    * saves output of the schedule
    */
@@ -101,10 +143,14 @@ class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
     builder ++= schedule.take(limit).toList
     builder ++= takeWhileBusy(schedule)
 
-
-    val savedJobs = Seq() ++ builder
+    val streams = Seq.fill(schedule.arity)(ArrayBuffer[ScheduledJob]())
     for {
-      idx <- 0.until(schedule.arity)
-    } yield savedJobs collect { case coreToJob => coreToJob(idx)}
+      seq <- builder
+      (flow, job) <- streams.zip(seq)
+    } flow.append(job)
+
+//    assert(streams.forall(isOrdered))
+
+    streams
   }
 }
