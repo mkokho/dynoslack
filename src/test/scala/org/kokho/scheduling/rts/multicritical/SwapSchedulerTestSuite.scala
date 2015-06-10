@@ -14,6 +14,7 @@ with MulticriticalScheduleBehavior {
   override def toSchedule(tasks: Partition): MulticriticalSchedule = new SwapSchedule(tasks)
 
 
+
   /**
    * The following set is expected to swap at time 5:
    * A E _ _ _ ~ ~ B _ _ ...
@@ -51,7 +52,7 @@ with MulticriticalScheduleBehavior {
     foundJobs should not contain erJobAt2
     foundJobs should contain(erJobAt4)
 
-    validityCheck(analyzer.extend(1000))
+    validityCheck(new ScheduleAnalyzer(simple2coreSet, 1000))
   }
 
   it should "permute schedules" in {
@@ -71,7 +72,7 @@ with MulticriticalScheduleBehavior {
     core2 should contain(taskC.job(0))
     core2 should contain(taskB.job(0))
 
-    validityCheck(analyzer.extend(1000))
+    validityCheck(new ScheduleAnalyzer(swapSet, 1000))
   }
 
   it should "release a swap job" in {
@@ -83,7 +84,7 @@ with MulticriticalScheduleBehavior {
     val extraJob = loTask.shiftedTasks(5).job(0)
     foundJobs should contain(extraJob)
 
-    validityCheck(analyzer.extend(1000))
+    validityCheck(new ScheduleAnalyzer(swapSet, 1000))
   }
 
   val swap3Set = (
@@ -99,7 +100,7 @@ with MulticriticalScheduleBehavior {
 
     releasedAmount shouldBe 2
 
-    validityCheck(analyzer.extend(1000))
+    validityCheck(new ScheduleAnalyzer(swap3Set, 1000))
   }
 
 
@@ -125,7 +126,7 @@ with MulticriticalScheduleBehavior {
     analyzer.jobStream(2).map(_.job) should contain(extraJob)
     analyzer.jobStream(0).map(_.job) should contain(nextExtraJob)
 
-    validityCheck(analyzer.extend(1000))
+    validityCheck( new ScheduleAnalyzer(swapGlobalSet, 1000))
   }
 
 
@@ -134,8 +135,8 @@ with MulticriticalScheduleBehavior {
 
     //the first core will contain two LO tasks that will be trying to release early jobs
     //the HI task simply increases utilization of the first core
-    val loTaskX = LoCriticalTask("X", 20, 6, List(10))
-    val loTaskY = LoCriticalTask("Y", 20, 4, List(10))
+    val loTaskX = LoCriticalTask("X", 20, 6, List(12))
+    val loTaskY = LoCriticalTask("Y", 20, 4, List(12))
     val hiTaskA = HiCriticalTask("A", 40, 20, 20)
 
     //the second and the third core will have combined slack for execution of only one early release job
@@ -143,7 +144,7 @@ with MulticriticalScheduleBehavior {
     //this slack should be claimed by release of longer critical job
     //also we make sure that a swap job is not continually executed
     //when swapped it will wait for completion of the local job
-    val taskB = HiCriticalTask("B", 14, 1, 5, Set(0))
+    val taskB = HiCriticalTask("B", 14, 3, 5, Set(0))
     val taskC = HiCriticalTask("C", 14, 9, 9)
 
     //taskD creates slack at runtime which we should not use because swap plan will break
@@ -152,14 +153,17 @@ with MulticriticalScheduleBehavior {
 
     /*schedule expectation (swap fixed at the time 10)
     *
+    *   ~ is  slack
+    *   ^ is unpredicted slack (when planning swap schedule)
+    *   _ is executions of a job
     *
     * X _ _ _ _ Y _ _ _ A _ _ _ _ _ _ _ _ _ _ _ _ _ _ ...
     * 1 2   4   6   8 9   1 2 3 4 5 6 7 8 9   1
     *                   10                  20
-    * B C _ _ _ _ _ _ _ ~ ~ ~ ~ B _ _ _ _ C _ _ _ _ _ ...
+    * B C _ _ _ _ _ _ _ _ _ ~ ~ B _ _ _ _ C _ _ _ _ _ ...
     * 1 2   4   6   8 9   1 2 3 4 5 6 7 8 9   1
     *                   10                  20
-    * D _ _ _ _ _ _ _ _ _ _ _ ~ E _ ~ ~ ~ ~ D _ _ _ _ ...
+    * D _ _ _ _ _ _ _ _ _ _ _ ^ E _ ~ ~ ~ ~ D _ _ _ _ ...
     * 1 2   4   6   8 9   1 2 3 4 5 6 7 8 9   1
     *                   10                  20
     */
@@ -170,8 +174,8 @@ with MulticriticalScheduleBehavior {
       val jobsX = analyzer.findJobs(loTaskX)
       val jobsY = analyzer.findJobs(loTaskY)
 
-      val earlyJobX = loTaskX.shiftedTasks(10).job(0)
-      val earlyJobY = loTaskY.shiftedTasks(10).job(0)
+      val earlyJobX = loTaskX.shiftedTasks(12).job(0)
+      val earlyJobY = loTaskY.shiftedTasks(12).job(0)
 
       //exactly one early job is released
       (jobsY find (_.job == earlyJobY), jobsX find (_.job == earlyJobX)) match {
@@ -180,14 +184,14 @@ with MulticriticalScheduleBehavior {
         case _ => //good
       }
 
-      validityCheck(analyzer.extend(1000))
+      validityCheck(analyzer)
     }
 
     val taskset = (Seq(loTaskX, loTaskY, hiTaskA), Seq(taskB, taskC), Seq(taskD, taskE))
-    doCheck(new ScheduleAnalyzer(taskset, 20))
+    doCheck(new ScheduleAnalyzer(taskset, 1500))
 
-    val taskSetReverse = (taskset._1.reverse, taskset._2, taskset._3)
-    doCheck(new ScheduleAnalyzer(taskSetReverse, 20))
+//    val taskSetReverse = (taskset._1.reverse, taskset._2, taskset._3)
+//    doCheck(new ScheduleAnalyzer(taskSetReverse, 20))
 
   }
 }

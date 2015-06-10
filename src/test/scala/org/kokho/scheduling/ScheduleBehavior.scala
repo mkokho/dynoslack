@@ -15,11 +15,21 @@ trait ScheduleBehavior {
   }
 
   def overdueCheck(analyzer: ScheduleAnalyzer): Unit = {
-    assert(analyzer.findOverdueJobs().flatten.isEmpty)
+    val res = analyzer.findOverdueJobs().flatten
+    if (res.nonEmpty) {
+      val failedJob: ScheduledJob = res.head
+      val debug = analyzer.debugInfo(failedJob.job.release, failedJob.to - failedJob.job.release)
+      fail("There are overdue jobs. Example: " + failedJob + "\n" + debug)
+    }
   }
 
   def uncompletedCheck(analyzer: ScheduleAnalyzer): Unit = {
-    assert(analyzer.findUncompletedJobs().flatten.isEmpty)
+    val res = analyzer.findUncompletedJobs().flatten
+    if (res.nonEmpty) {
+      val failedJob: Job = res.head
+      val debug = analyzer.debugInfo(failedJob.release, failedJob.relativeDeadline)
+      fail("There are uncompleted jobs. Example: " + failedJob + "\n" + debug)
+    }
   }
 
   def aSchedule(schedule: Schedule): Unit = {

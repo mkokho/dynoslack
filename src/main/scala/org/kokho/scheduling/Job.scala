@@ -17,6 +17,8 @@ trait Job {
 
   def deadline: Int
 
+  def relativeDeadline = deadline - release
+
   def releasedBy: Option[Task] = None
 
   def isOfTask(task: Task): Boolean = releasedBy match {

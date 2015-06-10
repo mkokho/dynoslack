@@ -1,5 +1,10 @@
 package org.kokho.scheduling
 
+import org.kokho.scheduling.rts.multicritical.MulticriticalTask
+
+import scala.collection.LinearSeq
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+
 /**
  * Created with IntelliJ IDEA on 6/7/2015.
  * @author: Mikhail Kokho
@@ -7,7 +12,7 @@ package org.kokho.scheduling
 class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
   private val jobsStream = toJobSequences(schedule, memory)
 
-  def extend(until: Int):ScheduleAnalyzer = if (until < memory) this else new ScheduleAnalyzer(schedule, until)
+  assert(jobsStream(0).size >= memory)
 
   def findJobs(task: Task): Seq[ScheduledJob] = {
     require(schedule.tasks.contains(task), "There is no such task in the schedule")
@@ -17,7 +22,14 @@ class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
     jobsStream.map(fiterAndMerge).flatten
   }
 
-  def printSchedule(): Unit = {
+  def debugInfo(from: Int, length: Int): String = {
+    def format(seq: Seq[ScheduledJob]): String =
+      seq.drop(from).take(length).map(_.toString.padTo(31, " ").mkString).mkString
+
+    jobsStream.map(format).mkString("\n")
+  }
+
+  def printSchedule(limit: Int = 20): Unit = {
     jobsStream map mergeScheduledJobs foreach println
   }
 
@@ -81,14 +93,16 @@ class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
         Nil
 
     //first we take a fixed number of elements
-    val scheduleFixedLength = schedule.take(limit).toList.toSeq
     //then we take elements while schedule remains busy
     //@TODO for some cases schedule may remain busy forever
     //it is a custom method because takeWhile advances iterator, and then checks the schedule
     //therefore we miss last element
-    val scheduleWhileBusy = takeWhileBusy(schedule)
+    val builder = ArrayBuffer[Seq[ScheduledJob]]()
+    builder ++= schedule.take(limit).toList
+    builder ++= takeWhileBusy(schedule)
 
-    val savedJobs = scheduleFixedLength ++ scheduleWhileBusy
+
+    val savedJobs = Seq() ++ builder
     for {
       idx <- 0.until(schedule.arity)
     } yield savedJobs collect { case coreToJob => coreToJob(idx)}

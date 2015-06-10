@@ -1,6 +1,6 @@
 package org.kokho.scheduling.rts.multicritical
 
-import org.kokho.scheduling.ScheduleBehavior
+import org.kokho.scheduling.{Schedule, Task, ScheduleBehavior}
 import org.scalatest.FlatSpec
 
 /**
@@ -31,7 +31,6 @@ trait MulticriticalScheduleBehavior extends ScheduleBehavior{
     toSchedule(partition)
 
   def toSchedule(tasks: Partition): MulticriticalSchedule
-
 
   def aMulticriticalSchedule(sch: MulticriticalSchedule): Unit ={
     
