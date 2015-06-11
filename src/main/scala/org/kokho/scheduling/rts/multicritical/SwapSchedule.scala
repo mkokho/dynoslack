@@ -40,9 +40,8 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
       if (t - absoluteTime >= task.deadline) None
       else {
         states foreach (_.advanceTime())
-        if (!states.forall(_.isSwapAvailable)
-          || startSchedule.isFutureBusy(t)
-          || endSchedule.isFutureBusy(t)) findHelper(states, t + 1)
+        if (!states.forall(_.isSwapAvailable))// || startSchedule.isFutureBusy(t) || endSchedule.isFutureBusy(t))
+          findHelper(states, t + 1)
         else states match {
           case a :: b :: _ =>
             if (a.slackBehind + b.slackAhead >= task.execution)
@@ -72,8 +71,8 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
     val planStart = swapPoint.executionPlan.takeWhile(_ < swapPoint.t).toList
     val planEnd = swapPoint.executionPlan.dropWhile(_ < swapPoint.t).take(job.length - planStart.size).toList
 
-    swapPoint.startSchedule.insertSwapJob(SwapJob(job, swapPoint.t, planStart))
-    swapPoint.endSchedule.insertSwapJob(SwapJob(job, swapPoint.t, planEnd))
+    swapPoint.startSchedule.insertSwapJob(SwapJob(job, swapPoint.t, planStart, true))
+    swapPoint.endSchedule.insertSwapJob(SwapJob(job, swapPoint.t, planEnd, false))
   }
 
   private def releaseSwap(task: LoCriticalTask) = {
@@ -86,7 +85,7 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
         }
     }
 
-     val allSchedulePairs= localSchedules.filter(!_.isSwapActive()).combinations(2)
+    val allSchedulePairs = localSchedules.filter(!_.isSwapActive()).combinations(2)
 
     releaseSwapHelper(allSchedulePairs.toList)
   }

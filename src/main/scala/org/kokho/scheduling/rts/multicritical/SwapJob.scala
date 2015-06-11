@@ -5,10 +5,8 @@ import org.kokho.scheduling.{Job, JobProxy}
 /**
  * Swap job is executed partially on a processor
  */
-case class SwapJob(job: Job, swapTime: Int, executionPlan: List[Int]) extends JobProxy{
-//  require(reclaimingPlan.nonEmpty, "Slack reclamation plan must be known in advance")
+case class SwapJob(job: Job, swapTime: Int, executionPlan: List[Int], isFirstHalf: Boolean) extends JobProxy{
 
-//  override def length: Int = reclaimingPlan.head
   override def toString: String = super.toString + " executed at " + executionPlan
 
   def isComplete = executionPlan.isEmpty
@@ -16,6 +14,6 @@ case class SwapJob(job: Job, swapTime: Int, executionPlan: List[Int]) extends Jo
   def execute(t: Int) = {
     require(executionPlan.nonEmpty, "Swap job has already been completed")
     require(t == executionPlan.head, "The plan cannot be broken")
-    new SwapJob(job, swapTime, executionPlan.tail)
+    new SwapJob(job, swapTime, executionPlan.tail, isFirstHalf)
   }
 }

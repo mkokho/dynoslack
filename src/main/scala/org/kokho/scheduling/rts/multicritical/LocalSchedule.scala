@@ -55,10 +55,10 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
     else if (activeJobs.isEmpty) false
     else {
       activeJobs.exists(_.isBusy)
-//      val aJob = activeJobs.head
-//      assert(!aJob.isCompleted) //we don't have completed job at the beginning
-//      assert(aJob.isBusy || activeJobs.drop(1).filter(_.isBusy).isEmpty) //there are no busy jobs if the first job is not busy
-//      aJob.isBusy
+      //      val aJob = activeJobs.head
+      //      assert(!aJob.isCompleted) //we don't have completed job at the beginning
+      //      assert(aJob.isBusy || activeJobs.drop(1).filter(_.isBusy).isEmpty) //there are no busy jobs if the first job is not busy
+      //      aJob.isBusy
     }
   }
 
@@ -100,7 +100,7 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
     //there is also static slack, that will appear later
     //we consume as much dynamic slack as we have
     //@TODO we might consume too much, is this schedule is host for the given task
-//    assert(SlackPeriod.totalSlack(slackForecast(job.job.deadline), job.job.deadline) >= job.job, s"Job $job is trying to reclaim more than available")
+    //    assert(SlackPeriod.totalSlack(slackForecast(job.job.deadline), job.job.deadline) >= job.job, s"Job $job is trying to reclaim more than available")
 
     slackJobs.trimStart(job.length)
     cachedSlack = None
@@ -143,24 +143,21 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
 
   def slackDemand(task: LoCriticalTask) = globalSwapJob match {
     case None => if (isHost(task)) task.demand(globalTime) else task.execution
-    case Some(SwapJob(_, swapTime, _)) =>
+    case Some(SwapJob(_, swapTime, _, _)) =>
       if (isHost(task) && globalTime + task.period < swapTime) task.demand(globalTime)
-        else task.execution
+      else task.execution
   }
 
 
   def hasSlackForTask(task: LoCriticalTask): Boolean = {
-    //the $slackSeq contains periods of slack.
-    //we accumulate sum of slack
-
     val slackSeq = slackForecast(task.deadline)
     val availableSlack: Int = SlackPeriod.totalSlack(slackSeq, globalTime + task.deadline)
     slackDemand(task) <= availableSlack
   }
 
-  private var freeFutureTime:List[Int] = List[Int]()
+  private var busyTimes: List[Int] = List[Int]()
 
-  def isFutureBusy(t: Int) = freeFutureTime.contains(t)
+  def isFutureBusy(t: Int) = busyTimes.contains(t)
 
   private def copmuteSlackForecast(limit: Int): Seq[SlackPeriod] = {
     assert(limit >= 0)
@@ -169,7 +166,7 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
       var slackSeq: List[SlackPeriod] = List()
       var copyActiveJobs = activeJobs.clone().toList
       var copySlackUnits = slackJobs.clone().toList
-      freeFutureTime = List()
+      busyTimes = List()
 
       def executeSlack(t: Int) {
         //swap job also takes slack
@@ -202,14 +199,9 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
           slackSeq = SlackPeriod(t, t) :: slackSeq
       }
 
-      val bound = globalSwapJob match {
-        case None => globalTime + limit
-        case Some(SwapJob(_, swapTime, _)) => Math.min(swapTime, globalTime + limit)
-      }
-
-      for (t <- globalTime.until(bound)) {
+      for (t <- globalTime.until(globalTime + limit)) {
         copyActiveJobs = (copyActiveJobs ++ releaseJobs(t)).sorted
-        if (copyActiveJobs.exists(_.isBusy)) freeFutureTime = t :: freeFutureTime
+        if (copyActiveJobs.exists(_.isBusy)) busyTimes = t :: busyTimes
 
         (copyActiveJobs, copySlackUnits) match {
           case (Nil, Nil) => executeSlack(t)

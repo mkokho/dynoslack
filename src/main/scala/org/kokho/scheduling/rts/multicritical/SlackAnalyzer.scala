@@ -11,7 +11,7 @@ class SlackAnalyzer(val seq: Seq[SlackPeriod], val start: Int, val end: Int) {
 
   private var _slackBehind = 0
   private var _slackAhead = totalSlack
-  private var idx = 0
+  private var idx = seq.indexWhere(_.to >= start)
   private var relativeTime = 0
   private var _slackTime = List[Int]()
 
@@ -55,10 +55,11 @@ class SlackAnalyzer(val seq: Seq[SlackPeriod], val start: Int, val end: Int) {
   """.stripMargin
   }
 
-  override def toString: String = s"SState($slackBehind<-$relativeTime->$slackAhead)"
+  override def toString: String = s"SeqState($slackBehind<-$relativeTime->$slackAhead)"
 
   def advanceTime(): Unit = {
     relativeTime += 1
+
     if (idx >= seq.size) {
       assert(_slackBehind == totalSlack, s"Behind slack mismatch\n" + state() )
       assert(_slackAhead == 0,  s"Ahead slack mismatch\n" + state() )
