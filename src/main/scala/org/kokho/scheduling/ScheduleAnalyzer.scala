@@ -1,24 +1,33 @@
 package org.kokho.scheduling
 
 import scala.collection.immutable.HashSet
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 /**
  * Created with IntelliJ IDEA on 6/7/2015.
  * @author: Mikhail Kokho
  */
-class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
+class ScheduleAnalyzer(val schedule: Schedule,
+                       val memory: Int = 30,
+                       val fixedMemory: Boolean = false) {
   private val jobsStream = toJobSequences(schedule, memory)
 
-  assert(jobsStream(0).size >= memory)
+  lazy val taskToJobs = computeTaskToJobs()
 
-  def findJobs(task: Task): Seq[ScheduledJob] = {
-    require(schedule.tasks.contains(task), "There is no such task in the schedule")
 
-    def fiterAndMerge(seq: Seq[ScheduledJob]) = mergeScheduledJobs(seq.filter(_.isOfTask(task)))
+  def totalIdleTime: Int = jobsStream.map(totalIdleTime(_)).sum
 
-    jobsStream.map(fiterAndMerge).flatten
+  def totalIdleTime(seq: Seq[ScheduledJob]): Int = seq.toIterator.map({
+    case ScheduledJob(_, _, IdleJob) => 1
+    case _ => 0
+  }).sum
+
+  def taskFrequency(task: Task): Int = {
+    require(schedule.tasks.contains(task))
+    taskToJobs(task).size
   }
+
 
   def debugInfo(from: Int, length: Int): String = {
     def format(seq: Seq[ScheduledJob]): String =
@@ -36,10 +45,17 @@ class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
     mergeScheduledJobs(jobsStream(idx))
   }
 
+  def findJobs(task: Task): Seq[ScheduledJob] = {
+    def fiterAndMerge(seq: Seq[ScheduledJob]) = mergeScheduledJobs(seq.filter(_.isOfTask(task)))
+
+    require(schedule.tasks.contains(task), "There is no such task in the schedule")
+    jobsStream.map(fiterAndMerge).flatten
+  }
+
   def findDoubleReleases(): Option[Job] = {
     val allJobs: Seq[ScheduledJob] = jobsStream.flatten
-        .filter(_.job != IdleJob)
-        .sortWith(_.to < _.to)
+      .filter(_.job != IdleJob)
+      .sortWith(_.to < _.to)
 
     val taskToJobs = allJobs.groupBy(_.job.releasedBy.get)
     var doubleRelease: Option[Job] = None
@@ -75,12 +91,12 @@ class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
 
   def findUncompletedJobs(): Seq[Seq[Job]] = jobsStream.map(findUncompletedJobs)
 
+  def findOverdueJobs(): Seq[Seq[ScheduledJob]] = jobsStream.map(findOverdueJobs)
+
   def findUncompletedJobs(idx: Int): Seq[Job] = {
     require(idx < jobsStream.size)
     findUncompletedJobs(jobsStream(idx))
   }
-
-  def findOverdueJobs(): Seq[Seq[ScheduledJob]] = jobsStream.map(findOverdueJobs)
 
   def findOverdueJobs(idx: Int): Seq[ScheduledJob] = {
     require(idx < jobsStream.size)
@@ -90,7 +106,6 @@ class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
   private def findOverdueJobs(jobs: Seq[ScheduledJob]) = {
     jobs.filter(scheduledJob => scheduledJob.to > scheduledJob.job.deadline)
   }
-
 
   private def findUncompletedJobs(jobs: Seq[ScheduledJob]) = {
     val sGrouped: Map[Job, Int] = jobs.groupBy(_.job).mapValues(ts => ts.foldLeft(0)(_ + _.length))
@@ -117,11 +132,27 @@ class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
   }
 
   private def isOrdered(seq: Seq[ScheduledJob]) = {
-   val res = seq.sliding(2).find(pair => pair(0).to > pair(1).from)
+    val res = seq.sliding(2).find(pair => pair(0).to > pair(1).from)
     res match {
       case None => true
       case Some(pair) => false
     }
+  }
+
+  private def computeTaskToJobs(): Map[Task, Set[Job]] = {
+    val mapBuilder = mutable.Map.empty[Task, mutable.Set[Job]]
+    for (task <- schedule.tasks) mapBuilder.put(task, mutable.Set.empty[Job])
+
+    for {
+      job <- jobsStream.flatten.filter(!_.isIdle).map(_.job)
+      task <- schedule.tasks
+      if job.isOfTask(task)
+    } {
+      val setBuilder = mapBuilder.get(task).get
+      setBuilder += job
+    }
+
+    mapBuilder.mapValues(_.toSet).toMap
   }
 
   /**
@@ -129,7 +160,7 @@ class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
    */
   private def toJobSequences(schedule: Schedule, limit: Int): Seq[Seq[ScheduledJob]] = {
     def takeWhileBusy(schedule: Schedule): List[Seq[ScheduledJob]] =
-      if (schedule.isBusy)
+      if (!fixedMemory && schedule.isBusy)
         schedule.next() :: takeWhileBusy(schedule)
       else
         Nil
@@ -149,7 +180,8 @@ class ScheduleAnalyzer(val schedule: Schedule, val memory: Int = 30) {
       (flow, job) <- streams.zip(seq)
     } flow.append(job)
 
-//    assert(streams.forall(isOrdered))
+    assert(streams.forall(isOrdered))
+    assert(streams(0).size >= memory)
 
     streams
   }

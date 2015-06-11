@@ -25,14 +25,12 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
     destinationSchedule.insertJob(job)
   }
 
-  private def allSchedulePairs() = localSchedules.combinations(2)
-
   private def findSwapPoint(startSchedule: LocalSchedule,
                             endSchedule: LocalSchedule,
                             task: LoCriticalTask): Option[SwapPoint] = {
 
     val states = List(startSchedule, endSchedule)
-      .map(_.slackForecast(task.deadline))
+      .map(_.slackForecast(task.deadline).toList)
       .map(new SlackAnalyzer(_, absoluteTime, absoluteTime + task.deadline))
 
     assert(states.count(_.totalSlack >= task.execution) == 0,
@@ -64,6 +62,8 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
   }
 
   def planSwap(task: LoCriticalTask, swapPoint: SwapPoint): Unit = {
+    assert(swapPoint.executionPlan.forall(_ >= absoluteTime), "Cannot back-schedule")
+
     swapPoints += swapPoint
     val taskSchedule = taskToLocalSchedule(task).get
     val job = taskSchedule.releaseEarlyJob(task).job
@@ -86,7 +86,9 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
         }
     }
 
-    releaseSwapHelper(allSchedulePairs().toList)
+     val allSchedulePairs= localSchedules.filter(!_.isSwapActive()).combinations(2)
+
+    releaseSwapHelper(allSchedulePairs.toList)
   }
 
   def swapSchedules(): Unit = if (swapPoints.nonEmpty) {

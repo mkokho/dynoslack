@@ -29,11 +29,8 @@ case class ScheduledJob(from: Int, to: Int, job: Job) {
     this.job == that.job && (this.to == that.from || that.to == this.from)
 
   def isOfTask(task: Task): Boolean = this.job.isOfTask(task)
-//    releasedBy match {
-//    case None => false
-//    case Some(otherTask) => task == otherTask
-//  }
 
+  def isIdle = job == IdleJob
 
   override def toString: String = job + "->" + from + ":" + to
 }

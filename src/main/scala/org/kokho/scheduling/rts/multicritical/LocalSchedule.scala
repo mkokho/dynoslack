@@ -67,6 +67,8 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
    */
   def isHost(task: Task): Boolean = tasks.contains(task)
 
+  def isSwapActive(): Boolean = globalSwapJob.isDefined
+
   def isSwapActive(task: Task): Boolean =
     globalSwapJob.isDefined && globalSwapJob.get.job.isOfTask(task)
 
@@ -110,6 +112,7 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
 
   def insertSwapJob(job: SwapJob): Unit = {
     assert(globalSwapJob.isEmpty, "The schedule already has a swap job")
+    assert(job.executionPlan.forall(_ >= globalTime), "Trying to insert late swap job")
     globalSwapJob = Some(job)
     cachedSlack = None
     slackJobs.trimStart(job.executionPlan.length)
@@ -257,6 +260,9 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
 
 
   private def executeActiveJob(): Job = {
+    assert(globalSwapJob.isEmpty || globalSwapJob.get.executionPlan.forall(_ > globalTime),
+      "It must be swap job for executing")
+
     val noSlackPush = globalSwapJob.isDefined
 
     if (activeJobs.isEmpty) {
@@ -291,6 +297,7 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
     //therefore if its not time to execute swap job, we execute active job
 
     assert(!swapJob.isComplete, "Completed swap job should be dropped")
+    assert(swapJob.executionPlan.forall(_ >= globalTime), "Swap job missed its execution plan")
     if (swapJob.executionPlan.head == globalTime) {
       val nextSwapJob = swapJob.execute(globalTime)
       if (!nextSwapJob.isComplete)
