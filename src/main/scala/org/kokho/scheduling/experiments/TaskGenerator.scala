@@ -16,9 +16,9 @@ import scala.util.Random
  */
 class TaskGenerator(val probHi: Double,
                     val probLowJob: Double,
-                    val maxERPoints: Int = 20,
-                    val periodMin: Int = 50,
-                    val periodMax: Int = 200) {
+                    val maxERPoints: Int,
+                    val periodMin: Int,
+                    val periodMax: Int) {
 
   /**
    * Minimal utilization of a task
@@ -39,7 +39,7 @@ class TaskGenerator(val probHi: Double,
    * Utilization and WCET of a task are real numbers
    * We scale and round these number to get integers
    */
-  private val SCALE = 10
+  private val SCALE = 3
 
   private def scaled(d: Double): Int = Math.floor(d * SCALE).toInt
 
@@ -132,4 +132,6 @@ class TaskGenerator(val probHi: Double,
     else randomStream(min, max, Stream.empty).take(maxERPoints)
   }
 
+  override def toString: String = s"TaskGenerator(probHi: $probHi, probLowJob: $probLowJob," +
+    s"maxERPotins: $maxERPoints, period: between $periodMin and $periodMax)"
 }

@@ -15,7 +15,6 @@ class ScheduleAnalyzer(val schedule: Schedule,
 
   lazy val taskToJobs = computeTaskToJobs()
 
-
   def totalIdleTime: Int = jobsStream.map(totalIdleTime(_)).sum
 
   def totalIdleTime(seq: Seq[ScheduledJob]): Int = seq.toIterator.map({
