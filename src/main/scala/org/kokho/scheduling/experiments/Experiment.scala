@@ -3,6 +3,8 @@ package org.kokho.scheduling.experiments
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
+import org.kokho.binpacking.{BinPacker, WeightedObject, WorstFitPacker}
+import org.kokho.scheduling.Task
 import org.kokho.scheduling.rts.multicritical._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -16,7 +18,14 @@ class Experiment(val generator: TaskGenerator,
                  val cores: Int,
                  val repetition: Int,
                  val duration: Int,
-                 val writer: java.io.Writer) {
+                 private val writer: java.io.Writer) {
+
+  implicit def taskToWeighted(x: Task): WeightedObject = new WeightedObject {
+    override def weight: Double = x.utilization
+  }
+
+
+  private val packer: BinPacker = new WorstFitPacker
 
   private def formatCurrentTime(): String = {
     val today = Calendar.getInstance().getTime
@@ -37,13 +46,13 @@ class Experiment(val generator: TaskGenerator,
     val header =
       s"""|# Experiment on $date
           |# Parameters: $cores cores, $utilizationBound utilization bound, $duration duration, $repetition repetitions
-          |# Task generator: $genString
+                                                                                                             |# Task generator: $genString
           |
           |""".stripMargin
 
     output(header)
 
-    val columns = "#  Difference is computed by subtracting first columns from the second \n" +
+    val columns = "#  Difference is computed by subtracting first column from the second \n" +
       "#  Idle Diff - positive means that swap scheduling is performing better \n" +
       "#  Freq Diff - negative means that swap scheduling is performing better \n" +
       "#  Idle G-ER  Idle Swap  Idle Diff   Freq G-ER  Freq Swap  Freq Diff\n\n"
@@ -69,49 +78,48 @@ class Experiment(val generator: TaskGenerator,
   }
 
   private def doOneRun(id: Int): Future[Int] = future {
-    val taskset = 0.until(cores).map(_ => generateTaskset())
-    val comparison = new ScheduleComparison(taskset, duration)
-    output(comparison)
+    //    val taskset = 0.until(cores).map(_ => generateTaskset(cores * utilizationBound))
+    val taskset = generateTaskset(cores * utilizationBound).toSet
+    val partition = packer.packObjects(taskset).map(_.toSeq)
+    if (partition.size > cores) {
+      output("Could fit tasks to to the available cores\n")
+    } else {
+      val comparison = new ScheduleComparison(partition, duration)
+      output(comparison)
+    }
     id
   }
 
   def run(): Future[Seq[Int]] = {
     writeHeader()
-    val processes: Seq[Future[Int]] = for (x <- 1 to repetition) yield doOneRun(x)
+    val processes: Seq[Future[Int]] =
+      for (x <- 1 to repetition) yield doOneRun(x)
 
-    var remaining = repetition
+    var completed = 0
     processes foreach (future => {
       future onSuccess {
         case x: Int =>
-          remaining -= 1
-          println(s"Run $x has completed. Remaining runs: $remaining");
+          completed += 1
+          print(s" $completed");
       }
     })
 
     Future.sequence(processes)
-
-    //    processes foreach registerSuccessCallback
-    //    Thread.sleep(5000)
-    //    Future.sequence(processes)
-
   }
 
-  //  def statistics(sch: Schedule) = {
-  //    val analyzer = new ScheduleAnalyzer(sch, 10000, true)
-  //    output(analyzer.totalIdleTime + " ")
-  //  }
-
-  private def generateTaskset(): Seq[MulticriticalTask] = {
+  private def generateTaskset(uBound: Double): Seq[MulticriticalTask] = {
     def helper(acc: List[MulticriticalTask]): List[MulticriticalTask] = {
       val u = acc.map(_.utilization).sum
-      if (u < utilizationBound - 0.05)
+      if (u < uBound - 0.05)
         helper(generator.generateMulticriticalTask() :: acc)
-      else if (u < utilizationBound)
+      else if (u < uBound)
         acc
       else
         helper(acc.tail)
     }
 
-    helper(List())
+    val loTask = generator.generateLoTask()
+    //sort by decreasing utilization
+    helper(List()).sortBy(-_.utilization)
   }
 }

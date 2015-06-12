@@ -30,8 +30,11 @@ class ScheduleComparison(val taskset: Seq[Seq[MulticriticalTask]], val duration:
       case Some(jobs) =>
         val baseFrequency: Double = duration.toDouble / task.period
         val runtimeFrequency: Double = jobs.size.toDouble
-        if (runtimeFrequency < baseFrequency) println("Error: runtime frequency is smaller than base frequency")
-        runtimeFrequency / baseFrequency
+        if (runtimeFrequency < baseFrequency) {
+          println(s"Error: runtime frequency  $runtimeFrequency is smaller than base frequency $baseFrequency")
+          1
+        } else
+          runtimeFrequency / baseFrequency
     }
 
   private def frequencyImprovement(analyzer: ScheduleAnalyzer): Double = {

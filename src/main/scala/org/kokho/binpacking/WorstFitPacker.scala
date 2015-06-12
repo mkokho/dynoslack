@@ -13,7 +13,12 @@ class WorstFitPacker extends BinPacker{
    * @return a sequence of sets where each set contains part of the objects
    * @throws UnpackableSetException if the algorithm fails to find feasible packing
    */
-  override def packObjects[T](objects: Set[T])(implicit wrap: (T) => WeightedObject): Seq[Set[T]] = {
+  override def packObjects[T](objects: Set[T])(implicit wrap: (T) => WeightedObject): Seq[Set[T]] =
+    packObjectsGen(objects)(wrap)
+
+
+
+  private def packObjectsGen[T](objects: Traversable[T])(implicit wrap: (T) => WeightedObject): Seq[Set[T]] = {
     throwIfOverweighted(objects)
 
     def listToUtilization (l: List[T]) = l.map(_.weight).sum

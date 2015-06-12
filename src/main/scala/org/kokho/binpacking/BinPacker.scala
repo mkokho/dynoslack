@@ -32,7 +32,7 @@ trait BinPacker {
    * Throws UnpackableSetException if the set of objects contains an element with
    * weight greater than 1
    */
-  protected def throwIfOverweighted[T](objects: Set[T])(implicit wrap: T => WeightedObject) = {
+  protected def throwIfOverweighted[T](objects: Traversable[T])(implicit wrap: T => WeightedObject) = {
     objects foreach { obj: T =>
       if (obj.weight > 1)
         throw new UnpackableSetException(s"A weight of $obj exceeds 1. " +

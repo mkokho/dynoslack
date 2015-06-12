@@ -6,34 +6,35 @@ import scala.collection.mutable
 import scala.util.Random
 
 /**
- * Generator of random tasks
+ *  * Generator of random tasks
  *
  * @param probHi - probability of generating HI critical task
  * @param probLowJob - probability of taking low WCET by a HI critical task
  * @param maxERPoints - maximal number of early release point a task can have
  * @param periodMin - lower bound on the period of every generated task
  * @param periodMax - upper bound on the period of every generated task
+ * @param utilizationMin
+ * @param utilizationMax
+ * @param ratioUhighToUlow - A high WCET of a HI critical task is this times greater that low WCET
  */
 class TaskGenerator(val probHi: Double,
                     val probLowJob: Double,
                     val maxERPoints: Int,
                     val periodMin: Int,
-                    val periodMax: Int) {
+                    val periodMax: Int,
+                    val utilizationMin: Double,
+                    val utilizationMax: Double,
+                     val ratioUhighToUlow: Int) {
 
-  /**
-   * Minimal utilization of a task
-   */
-  val MIN_UTILIZATION = 0.05
-
-  /**
-   * Maximal utilization of a task
-   */
-  val MAX_UTILIZATION = 0.5
-
-  /**
-   * A high WCET of a HI critical task is this times greater that low WCET
-   */
-  val MAX_OVERPROVISIONING = 8
+  require(utilizationMin > 0)
+  require(utilizationMax <= 1)
+  require(utilizationMin < utilizationMax)
+  require(probHi >= 0 && probHi <= 1)
+  require(maxERPoints >= 0)
+  require(periodMin < periodMax)
+  require(periodMin > 0)
+  require(utilizationMin > 0)
+  require(utilizationMax <= 1)
 
   /**
    * Utilization and WCET of a task are real numbers
@@ -52,20 +53,17 @@ class TaskGenerator(val probHi: Double,
 
   def generateMulticriticalTask(): MulticriticalTask = {
     if (Random.nextDouble() > this.probHi)
-      generateLoTask(MIN_UTILIZATION, MAX_UTILIZATION)
-    else generateHiTask(MIN_UTILIZATION, MAX_UTILIZATION)
+      generateLoTask()
+    else
+      generateHiTask()
   }
 
-  def generateLoTask(uMin: Double, uMax: Double): LoCriticalTask = {
-    require(uMin > 0)
-    require(uMax <= 1)
-    require(uMin < uMax)
-
+  def generateLoTask(): LoCriticalTask = {
     //period of the task
     val period = randomPeriod()
 
     //utilization of the task
-    val utilization = randomDouble(uMin, uMax)
+    val utilization = randomDouble(utilizationMin, utilizationMax)
 
     //given utilization and period we compute execution requirements
     val wcet = utilization * period
@@ -81,19 +79,16 @@ class TaskGenerator(val probHi: Double,
     LoCriticalTask(periodScaled, wcetScaled, erPoints)
   }
 
-  def generateHiTask(uMin: Double, uMax: Double): HiCriticalTask = {
-    require(uMin > 0)
-    require(uMax <= 1)
-    require(uMin < uMax)
+  def generateHiTask(): HiCriticalTask = {
 
     //period of the task
     val period = randomPeriod()
 
     //HI utilization the task
-    val uHi = randomDouble(uMin, uMax)
+    val uHi = randomDouble(utilizationMin, utilizationMax)
 
     //ration of HI utilization to LO utilization, i.e. uHI/uLo
-    val uRatio = randomInt(1, MAX_OVERPROVISIONING + 1)
+    val uRatio = randomInt(1, ratioUhighToUlow + 1)
 
     //given ration and HI utilization we compute LO utilization
     val uLo = uHi / uRatio
@@ -109,7 +104,7 @@ class TaskGenerator(val probHi: Double,
 
   private def loJob(prob: Double): Int => Boolean = {
     val m = mutable.Map.empty[Int, Boolean]
-    m.getOrElseUpdate(_, Random.nextDouble() > prob)
+    m.getOrElseUpdate(_, Random.nextDouble() <= prob)
   }
 
   /**
@@ -135,3 +130,61 @@ class TaskGenerator(val probHi: Double,
   override def toString: String = s"TaskGenerator(probHi: $probHi, probLowJob: $probLowJob," +
     s"maxERPotins: $maxERPoints, period: between $periodMin and $periodMax)"
 }
+
+case class TaskGeneratorBuilder(_probHi: Double = 0.5,
+                                _probLowJob: Double = 0.9,
+                                _maxERPoints: Int = 10,
+                                _periodMin: Int = 50,
+                                _periodMax: Int = 200,
+                                _utilizationMin: Double = 0.05,
+                                _utilizationMax: Double = 0.5,
+                                _ratioHighWCETtoLowWCET: Int = 4) {
+
+
+  def build() = new TaskGenerator(
+    probHi = this._probHi,
+    probLowJob = this._probLowJob,
+    maxERPoints = this._maxERPoints,
+    periodMin = this._periodMin,
+    periodMax = this._periodMax,
+    utilizationMin = this._utilizationMin,
+    utilizationMax = this._utilizationMax,
+    ratioUhighToUlow = this._ratioHighWCETtoLowWCET
+  )
+
+  def setProbHi(newProbHi: Double): TaskGeneratorBuilder =
+    TaskGeneratorBuilder(
+      _probHi = newProbHi,
+      _probLowJob = this._probLowJob,
+      _maxERPoints = this._maxERPoints,
+      _periodMin = this._periodMin,
+      _periodMax = this._periodMax,
+      _utilizationMin = this._utilizationMin,
+      _utilizationMax = this._utilizationMax,
+      _ratioHighWCETtoLowWCET = this._ratioHighWCETtoLowWCET
+    )
+
+  def setProbLowJob(newProbLowJob: Double) = TaskGeneratorBuilder(
+    _probLowJob = newProbLowJob,
+    _probHi = this._probHi,
+    _maxERPoints = this._maxERPoints,
+    _periodMin = this._periodMin,
+    _periodMax = this._periodMax,
+    _utilizationMin = this._utilizationMin,
+    _utilizationMax = this._utilizationMax,
+    _ratioHighWCETtoLowWCET = this._ratioHighWCETtoLowWCET
+  )
+
+  def setPeriodBound(newPeriodMin: Int, newPeriodMax: Int) =
+    TaskGeneratorBuilder(
+    _periodMin = newPeriodMin,
+    _periodMax = newPeriodMax,
+    _probHi = this._probHi,
+    _probLowJob = this._probLowJob,
+    _maxERPoints = this._maxERPoints,
+    _utilizationMin = this._utilizationMin,
+    _utilizationMax = this._utilizationMax,
+    _ratioHighWCETtoLowWCET = this._ratioHighWCETtoLowWCET
+    )
+}
+
