@@ -1,5 +1,7 @@
 package org.kokho.scheduling
 
+import org.kokho.scheduling.rts.multicritical.LoCriticalTask
+
 import scala.collection.immutable.HashSet
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -15,6 +17,8 @@ class ScheduleAnalyzer(val schedule: Schedule,
 
   lazy val taskToJobs = computeTaskToJobs()
 
+  def totalIdleTimeBefore(t: Int): Int = jobsStream.map(seq => totalIdleTime(seq.take(t))).sum
+
   def totalIdleTime: Int = jobsStream.map(totalIdleTime(_)).sum
 
   def totalIdleTime(seq: Seq[ScheduledJob]): Int = seq.toIterator.map({
@@ -25,6 +29,21 @@ class ScheduleAnalyzer(val schedule: Schedule,
   def taskFrequency(task: Task): Int = {
     require(schedule.tasks.contains(task))
     taskToJobs(task).size
+  }
+
+  def numberOfEarlyReleases(loTask: LoCriticalTask) = {
+    require(schedule.tasks.contains(loTask))
+    var offset = 0
+    var count = 0
+    for (job <- findJobs(loTask)) {
+      val releasedBy = job.job.releasedBy.get
+      if (releasedBy.offset != offset){
+        count += 1
+        offset = releasedBy.offset
+      }
+    }
+
+    count
   }
 
 

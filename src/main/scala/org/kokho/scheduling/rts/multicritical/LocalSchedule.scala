@@ -1,6 +1,7 @@
 package org.kokho.scheduling.rts.multicritical
 
 import org.kokho.scheduling._
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -10,6 +11,9 @@ import scala.collection.mutable.ListBuffer
  * @author: Mikhail Kokho
  */
 class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[ScheduledJob] {
+
+  private val logger = LoggerFactory.getLogger(classOf[LocalSchedule])
+
 
   /**
    * For sorting sequences of active jobs
@@ -251,17 +255,19 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
   }
 
 
+
   private def executeActiveJob(): Job = {
     assert(globalSwapJob.isEmpty || globalSwapJob.get.executionPlan.forall(_ > globalTime),
       "It must be swap job for executing")
 
-    val noSlackPush = globalSwapJob.isDefined
+    val noSlackPush = globalSwapJob.isDefined  && globalTime > globalSwapJob.get.swapTime
 
     if (activeJobs.isEmpty) {
       if (slackJobs.nonEmpty) slackJobs.trimStart(1)
       IdleJob
     } else {
       if (noSlackPush && slackJobs.nonEmpty && slackJobs.head.deadline < activeJobs.head.job.deadline) {
+        logger.info("Slack is wasted because of a swap job " + globalSwapJob.get.job)
         slackJobs.trimStart(1)
         IdleJob
       } else {
@@ -283,13 +289,18 @@ class LocalSchedule(immutableTasks: Seq[MulticriticalTask]) extends Iterator[Sch
     }
   }
 
+  def debugInfo() = {
+    val s = s"""Time: $globalTime, swap: $globalSwapJob, active: $activeJobs, slack: $slackJobs"""
+    logger.info(s)
+  }
+
   private def executeWithSwapJob(swapJob: SwapJob): Job = {
     //swap job has higner priority than any job
     //but also swap job is executed according to the precomputed plan
     //therefore if its not time to execute swap job, we execute active job
-
     assert(!swapJob.isComplete, "Completed swap job should be dropped")
     assert(swapJob.executionPlan.forall(_ >= globalTime), "Swap job missed its execution plan")
+//    debugSwapJob()
     if (swapJob.executionPlan.head == globalTime) {
       val nextSwapJob = swapJob.execute(globalTime)
       if (!nextSwapJob.isComplete)

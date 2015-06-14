@@ -2,6 +2,7 @@ package org.kokho.scheduling.experiments
 
 import org.kokho.scheduling.ScheduleAnalyzer
 import org.kokho.scheduling.rts.multicritical._
+import org.slf4j.LoggerFactory
 
 /**
  * Created by Mikhail Kokho on 6/12/2015.
@@ -12,29 +13,62 @@ class ScheduleComparison(val taskset: Seq[Seq[MulticriticalTask]], val duration:
   private val globalERAnalyzer = new ScheduleAnalyzer(new ScheduleWithGlobalER(taskset), duration, true)
   private val swapAnalyzer = new ScheduleAnalyzer(new SwapSchedule(taskset), duration, true)
 
+  private val baselineTaskset = taskset.map(toBaselineTaskset)
+  private val baselineAnalyzer = new ScheduleAnalyzer(new ScheduleWithLocalER(baselineTaskset), duration, true)
 
-  def frequencyImprovementGlobalER = frequencyImprovement(globalERAnalyzer)
 
-  def frequencyImprovementSwap = frequencyImprovement(swapAnalyzer)
+  private val logger = LoggerFactory.getLogger(classOf[ScheduleComparison])
+
+  def idleDiff() {
+    var mistake = 0
+    for (t <- 0 until duration) {
+      val sIdle = swapAnalyzer.totalIdleTimeBefore(t)
+      val gIdle = globalERAnalyzer.totalIdleTimeBefore(t)
+      if (sIdle - gIdle - mistake != 0) {
+        mistake = sIdle - gIdle
+        logger.info(s"Swap: total idle time before $t is $sIdle")
+        logger.info(s"G-ER: total idle time before $t is $gIdle")
+      }
+    }
+  }
+
+  def jobsProducedDifference() = {
+    for (task <- taskset.flatten) {
+      val jobsInSwap = swapAnalyzer.findJobs(task)
+      val jobsInGer = globalERAnalyzer.findJobs(task)
+      logger.info(s"Task $task:")
+
+      if (task.isInstanceOf[LoCriticalTask]){
+        val loTask = task.asInstanceOf[LoCriticalTask]
+        val swapReleases = swapAnalyzer.numberOfEarlyReleases(loTask)
+        val globalReleases = globalERAnalyzer.numberOfEarlyReleases(loTask)
+
+        logger.info("  released in swap: " + swapReleases)
+        logger.info("  released in g-er: " + globalReleases)
+      }
+
+      logger.info("  Swap / GlobalER: " + jobsInSwap.diff(jobsInGer))
+      logger.info("  GlobalER / Swap: " + jobsInGer.diff(jobsInSwap))
+    }
+  }
+
+  lazy val frequencyImprovementGlobalER = frequencyImprovement(globalERAnalyzer)
+
+  lazy val frequencyImprovementSwap = frequencyImprovement(swapAnalyzer)
 
   def idleTimeGlobalER = globalERAnalyzer.totalIdleTime
 
   def idleTimeSwap = swapAnalyzer.totalIdleTime
 
+  def idelTimeNoRelease = baselineAnalyzer.totalIdleTime
 
   private def getImprovement(analyzer: ScheduleAnalyzer, task: LoCriticalTask): Double =
     analyzer.taskToJobs.get(task) match {
-      case None =>
-        println("Cannot compute frequency improvement. There is not such task");
-        1
+      case None => 1
       case Some(jobs) =>
         val baseFrequency: Double = duration.toDouble / task.period
         val runtimeFrequency: Double = jobs.size.toDouble
-        if (runtimeFrequency < baseFrequency) {
-          println(s"Error: runtime frequency  $runtimeFrequency is smaller than base frequency $baseFrequency")
-          1
-        } else
-          runtimeFrequency / baseFrequency
+        Math.max(1, runtimeFrequency / baseFrequency)
     }
 
   private def frequencyImprovement(analyzer: ScheduleAnalyzer): Double = {
@@ -47,9 +81,6 @@ class ScheduleComparison(val taskset: Seq[Seq[MulticriticalTask]], val duration:
       org.kokho.utils.Math.mean(allImprovements)
     }
   }
-
-  //  val baselineAnalyzer = new ScheduleAnalyzer(new ScheduleWithLocalER(baselineTaskset), duration, true)
-  //  private val baselineTaskset = taskset.map(toBaselineTaskset)
 
 
   private def toBaselineTaskset(seq: Seq[MulticriticalTask]) =

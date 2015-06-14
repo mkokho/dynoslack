@@ -18,6 +18,8 @@ trait HiCriticalTask extends MulticriticalTask with SynchronousTask {
   def lowJobs: Int => Boolean
 
   override def execution: Int = hiExecution
+
+  override def toString: String = s"Hi($period, $loExecution, $hiExecution)"
 }
 
 

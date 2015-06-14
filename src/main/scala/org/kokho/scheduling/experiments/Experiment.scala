@@ -6,6 +6,7 @@ import java.util.Calendar
 import org.kokho.binpacking.{BinPacker, WeightedObject, WorstFitPacker}
 import org.kokho.scheduling.Task
 import org.kokho.scheduling.rts.multicritical._
+import org.slf4j.LoggerFactory
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, _}
@@ -23,6 +24,8 @@ class Experiment(val generator: TaskGenerator,
   implicit def taskToWeighted(x: Task): WeightedObject = new WeightedObject {
     override def weight: Double = x.utilization
   }
+
+  private val logger = LoggerFactory.getLogger(classOf[Experiment])
 
 
   private val packer: BinPacker = new WorstFitPacker
@@ -45,8 +48,8 @@ class Experiment(val generator: TaskGenerator,
     val genString = generator.toString
     val header =
       s"""|# Experiment on $date
-          |# Parameters: $cores cores, $utilizationBound utilization bound, $duration duration, $repetition repetitions
-                                                                                                             |# Task generator: $genString
+          |# Parameters: $cores cores $utilizationBound utilization bound $duration duration $repetition repetitions
+          |# Task generator: $genString
           |
           |""".stripMargin
 
@@ -55,7 +58,9 @@ class Experiment(val generator: TaskGenerator,
     val columns = "#  Difference is computed by subtracting first column from the second \n" +
       "#  Idle Diff - positive means that swap scheduling is performing better \n" +
       "#  Freq Diff - negative means that swap scheduling is performing better \n" +
-      "#  Idle G-ER  Idle Swap  Idle Diff   Freq G-ER  Freq Swap  Freq Diff\n\n"
+      "\n" +
+      "#  Idle No-ER, Idle G-ER, Idle Swap, Idle Diff, Freq G-ER, Freq Swap, Freq Diff, " +
+      "% Idle G-ER,  % Idle Swap\n\n"
     output(columns)
   }
 
@@ -65,24 +70,28 @@ class Experiment(val generator: TaskGenerator,
     val freqGlobal: Double = comparison.frequencyImprovementGlobalER
     val freqSwap: Double = comparison.frequencyImprovementSwap
     val formattedString =
-      "% 12d, % 8d, % 9d,   % 6.4f,   % 6.4f,   % 6.4f\n".format(
+      "% 12d, % 9d, % 9d, % 9d,   % 6.4f,   % 6.4f,   % 6.4f,   % 6.4f,   % 6.4f\n".format(
+        comparison.idelTimeNoRelease,
         idleGlobal,
         idleSwap,
         idleGlobal - idleSwap,
         freqGlobal,
         freqSwap,
-        freqGlobal - freqSwap
+        freqGlobal - freqSwap,
+        idleGlobal.toDouble / (cores*duration),
+        idleSwap.toDouble / (cores*duration)
       )
 
+    logger.info(formattedString)
     output(formattedString)
   }
 
   private def doOneRun(id: Int): Future[Int] = future {
-    //    val taskset = 0.until(cores).map(_ => generateTaskset(cores * utilizationBound))
     val taskset = generateTaskset(cores * utilizationBound).toSet
     val partition = packer.packObjects(taskset).map(_.toSeq)
+
     if (partition.size > cores) {
-      output("Could fit tasks to to the available cores\n")
+      output("Could not fit tasks to to the available cores\n")
     } else {
       val comparison = new ScheduleComparison(partition, duration)
       output(comparison)
@@ -118,7 +127,7 @@ class Experiment(val generator: TaskGenerator,
         helper(acc.tail)
     }
 
-    val loTask = generator.generateLoTask()
+//    val loTask = generator.generateLoTask()
     //sort by decreasing utilization
     helper(List()).sortBy(-_.utilization)
   }

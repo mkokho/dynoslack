@@ -1,6 +1,7 @@
 package org.kokho.scheduling.rts.multicritical
 
 import org.kokho.scheduling.ScheduledJob
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
@@ -11,6 +12,8 @@ import scala.collection.mutable
 
 final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
   extends MulticriticalSchedule(partition) {
+
+  private val logger = LoggerFactory.getLogger(classOf[SwapSchedule])
 
   private var absoluteTime = 0
 
@@ -62,6 +65,8 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
 
   def planSwap(task: LoCriticalTask, swapPoint: SwapPoint): Unit = {
     assert(swapPoint.executionPlan.forall(_ >= absoluteTime), "Cannot back-schedule")
+
+    logger.info("Planning swap at " + swapPoint.t)
 
     swapPoints += swapPoint
     val taskSchedule = taskToLocalSchedule(task).get
