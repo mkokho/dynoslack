@@ -43,7 +43,7 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
       if (t - absoluteTime >= task.deadline) None
       else {
         states foreach (_.advanceTime())
-        if (!states.forall(_.isSwapAvailable))// || startSchedule.isFutureBusy(t) || endSchedule.isFutureBusy(t))
+        if (!states.forall(_.isSwapAvailable))
           findHelper(states, t + 1)
         else states match {
           case a :: b :: _ =>
@@ -116,7 +116,7 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
     for (task <- tasksForER) {
       localSchedules find (_.hasSlackForTask(task)) match {
         case Some(sch) => releaseGlobally(task, sch)
-        case None => releaseSwap(task)
+        case None => //releaseSwap(task)
       }
     }
   }

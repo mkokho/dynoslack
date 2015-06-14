@@ -43,7 +43,7 @@ class RandomTaskGenerator(val probHi: Double,
    * Utilization and WCET of a task are real numbers
    * We scale and round these number to get integers
    */
-  private val SCALE = 5
+  private val SCALE = 1
 
   private def scaled(d: Double): Int = Math.floor(d * SCALE).toInt
 
@@ -51,7 +51,8 @@ class RandomTaskGenerator(val probHi: Double,
     val scaledExecution = scaled(execution)
     val scaledPeriod = scaled(period)
     val roundingMistake: Double = utilization - scaledExecution.toDouble / scaledPeriod
-    assert(roundingMistake <= 0.01, s"Roubding mistake is greater than 0.01: $roundingMistake")
+    if (roundingMistake > 0.02)
+      println("Rounding mistake is greater than 0.02: %4.4f".format(roundingMistake))
   }
 
   def generateMulticriticalTask(): MulticriticalTask = {
