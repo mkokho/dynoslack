@@ -1,5 +1,4 @@
 .idea/
 out/
 target/
-project/
-logging.log
+*.log

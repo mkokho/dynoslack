@@ -44,6 +44,10 @@ class SlackAnalyzer(val seq: Seq[SlackPeriod], val start: Int, val end: Int) {
     idx < seq.size && absoluteTime >= slack.from && absoluteTime <= slack.to
   }
 
+  def isContiniousBehind = {
+    seq.take(idx + 1).dropWhile(_.length == 0).size == 0
+  }
+
   private def state():String = {
   s"""
     |Slack periods: $seq

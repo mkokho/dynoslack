@@ -116,7 +116,7 @@ final class SwapSchedule(partition: Seq[Seq[MulticriticalTask]])
     for (task <- tasksForER) {
       localSchedules find (_.hasSlackForTask(task)) match {
         case Some(sch) => releaseGlobally(task, sch)
-        case None => //releaseSwap(task)
+        case None => releaseSwap(task)
       }
     }
   }
