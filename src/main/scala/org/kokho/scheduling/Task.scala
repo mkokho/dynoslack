@@ -29,6 +29,8 @@ trait Task {
 
   def period: Int
 
+  final def utilization: Double = execution.toDouble / deadline
+
 
   def name: String = "NoName"
 
@@ -57,9 +59,6 @@ trait Task {
     require(n >= 0)
     jobs().drop(n).next()
   }
-
-  final def utilization: Double = execution.toDouble / deadline
-
 
   override def toString: String =
     if (offset == 0 && deadline == period)
