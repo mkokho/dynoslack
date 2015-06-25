@@ -1,6 +1,6 @@
 package org.kokho.scheduling.newmodel
 
-import org.kokho.scheduling.{Task, Job}
+import org.kokho.scheduling.{Job, Task}
 
 /**
  * Created with IntelliJ IDEA on 6/25/15.
@@ -27,9 +27,9 @@ trait JobSequence {
   /**
    * Returns jobs that are released in the period $from to $to (both inclusive)
    */
-  def produce(from: Int, to: Int) = produce(from).takeWhile(_.release <= to)
+  def produce(from: Int, to: Int): Iterator[Job] = produce(from).takeWhile(_.release <= to)
 
-  def produceAt(time: Int) = produce(time, time)
+  def produceAt(time: Int): Iterator[Job] = produce(time, time)
 
   /**
    * Merges two job sequences into one preserving the order of jobs
