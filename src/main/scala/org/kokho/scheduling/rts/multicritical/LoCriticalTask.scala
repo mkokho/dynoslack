@@ -19,6 +19,7 @@ import org.kokho.scheduling.NamedTask
  *
  */
 trait LoCriticalTask extends MulticriticalTask {
+  self =>
 
   override type JobType = LoCriticalJob
 
@@ -45,6 +46,12 @@ trait LoCriticalTask extends MulticriticalTask {
     val er = toRelativeTime(time)
     execution - (execution * er ) / period
   }
+
+  def toMutable: LoCriticalTaskMutable =
+    new LoCriticalTaskMutable(this.period, this.execution, this.earlyReleases)
+      with NamedTask {
+      override def name = self.name
+    }
 }
 
 

@@ -1,6 +1,6 @@
 package org.kokho.scheduling.newmodel
 
-import org.kokho.scheduling.{IdleJob, Job, ScheduledJob}
+import org.kokho.scheduling.{IdleJob, Job, ScheduledJob, Task}
 
 import scala.collection.immutable.ListSet
 
@@ -9,11 +9,22 @@ import scala.collection.immutable.ListSet
  * @author: Mikhail Kokho
  */
 
-class ScheduleFun(val jobs: JobSequence)(implicit priority: Ordering[Job]) {
+class ScheduleFun(val jobs: JobSequence)(implicit val priority: Ordering[Job]) {
 
   private var globalTime = 0
 
   private var activeJobs: Set[ScheduleFun#ActiveJob] = ListSet.empty
+
+  implicit def activeJobOrdering: Ordering[ScheduleFun#ActiveJob] = Ordering.by(_.job)
+
+  def isActive(job: Job) = activeJobs.exists(_.job == job)
+
+  def isActive(task: Task) = activeJobs.exists(_.job.isOfTask(task))
+
+  def isBusy = activeJobs.nonEmpty
+
+  def time = globalTime
+
 
   def simulate(duration: Int): Seq[ScheduledJob] = {
     require(duration > 0, s"Parameter must be positive. Actual: $duration")
@@ -52,10 +63,6 @@ class ScheduleFun(val jobs: JobSequence)(implicit priority: Ordering[Job]) {
       jobExec.job
     }
 
-  def isActive(job: Job) = activeJobs.iterator.map(_.job).contains(job)
-
-  implicit def activeJobOrdering: Ordering[ActiveJob] = Ordering.by(_.job)
-
 
   /**
    * Represents a job in the schedule that is currently being active
@@ -71,4 +78,6 @@ class ScheduleFun(val jobs: JobSequence)(implicit priority: Ordering[Job]) {
     def isComplete = job.length == executedFor
 
   }
+
+
 }

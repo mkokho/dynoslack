@@ -32,7 +32,7 @@ trait JobSequence {
   def produceAt(time: Int): Iterator[Job] = produce(time, time)
 
   /**
-   * Merges two job sequences into one preserving the order of jobs
+   * Merges two job sequences, preserving the order of produced jobs
    */
   def merge(that: JobSequence): JobSequence = new JobSequence {
     override def produce(): Iterator[Job] = {
@@ -42,9 +42,10 @@ trait JobSequence {
     }
   }
 
-
-  private def insertJob(j: Job, itr: BufferedIterator[Job]): Iterator[Job] =
-    mergeJobs(Iterator(j).buffered, itr)
+  /**
+   * Inserts a job into this job sequence
+   */
+  def insert(job: Job): JobSequence = merge(JobSequence(job))
 
 
   private def mergeJobs(xs: BufferedIterator[Job], ys: BufferedIterator[Job]): Iterator[Job] = new Iterator[Job] {
@@ -72,6 +73,10 @@ object JobSequence {
 
   val empty = new JobSequence {
     override def produce(): Iterator[Job] = Iterator.empty
+  }
+
+  def apply(j: Job): JobSequence = new JobSequence {
+    override def produce(): Iterator[Job] = Iterator(j)
   }
 
   def apply(t: Task): JobSequence = apply(Seq(t))

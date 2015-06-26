@@ -29,18 +29,14 @@ abstract class Schedule extends Iterator[Seq[ScheduledJob]] {
   /**
    * The tasks of the schedule
    */
-  lazy val tasks: Seq[Task] = partition.flatten
+  def tasks: Seq[Task] = partition.flatten
 
   /**
-   * Hyper-period of the tasks of the set partition($idx)
+   * Returns the index of the set that contains given task in the partition
    */
-  def hyperPeriod(idx: Int): Int = {
-    if (idx < 0 || idx >= arity) {
-      throw new IllegalArgumentException(
-        s"Index is out of bound. Expected between 0 and $arity. Given $idx"
-      )
-    }
-
-    org.kokho.utils.Math.lcm(partition(idx).map(_.period).iterator)
+  def scheduleIndex(task: Task): Option[Int] = partition.indexWhere(_.contains(task)) match {
+    case -1 => None
+    case p => Some(p)
   }
+
 }
