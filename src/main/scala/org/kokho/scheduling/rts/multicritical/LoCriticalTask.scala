@@ -47,11 +47,6 @@ trait LoCriticalTask extends MulticriticalTask {
     execution - (execution * er ) / period
   }
 
-  def toMutable: LoCriticalTaskMutable =
-    new LoCriticalTaskMutable(this.period, this.execution, this.earlyReleases)
-      with NamedTask {
-      override def name = self.name
-    }
 }
 
 
