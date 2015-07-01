@@ -33,9 +33,11 @@ trait JobStream {
    * Merges two job sequences, preserving the order of produced jobs
    */
   def merge(that: JobStream): JobStream = new JobStream {
-    override def produce(): Iterator[Job] = {
-      val jobsThat = that.produce().buffered
-      val jobsSelf = self.produce().buffered
+    override def produce(): Iterator[Job] = produce(0)
+
+    override def produce(from: Int): Iterator[Job] = {
+      val jobsThat = that.produce(from).buffered
+      val jobsSelf = self.produce(from).buffered
       mergeJobs(jobsSelf, jobsThat)
     }
   }

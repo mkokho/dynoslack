@@ -15,19 +15,31 @@ import scala.collection.mutable
  */
 class SchedulerWithLocalER(override val partition: Seq[Seq[MulticriticalTask]]) extends MulticriticalScheduler(partition){
 
-  private var globalTime: Int = 0
-
   /**
    * LoCriticalTasks will be changed at runtime.
    * We keep the change in this variable
    */
-  private var taskState: mutable.Map[Task, Task] = mutable.HashMap.empty ++ tasks.map(x => x -> x)
+  private val taskState: mutable.Map[Task, Task] = mutable.HashMap.empty ++ tasks.map(x => x -> x)
 
-
+  private val schedules: mutable.Seq[SchedulerHelper] = mutable.Seq.empty ++ partition.map(seq => SchedulerHelper(toJobStream(seq)))
 
   /**
    * Jobs that will be scheduled next.
    * @return a sequence of size $this.arity
    */
-  override def next(): Seq[ScheduledJob] = ???
+  override def next(): Seq[ScheduledJob] = {
+    val result = schedules.map(_.scheduledJob)
+
+    val nextTime = currentTime + 1
+    for {
+      idx <- 0 to partition.size
+      loTask <- partition(idx) collect {case t: LoCriticalTask => t}
+      if loTask.canReleaseEarlyJob(nextTime)
+
+    }
+
+    result
+  }
+
+  private def currentTime = schedules(0).time
 }

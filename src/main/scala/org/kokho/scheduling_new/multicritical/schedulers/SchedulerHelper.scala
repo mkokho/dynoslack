@@ -1,8 +1,6 @@
 package org.kokho.scheduling_new.multicritical.schedulers
 
-import org.kokho.scheduling.newmodel.JobSequence
-import org.kokho.scheduling.{IdleJob, Job, ScheduledJob, Task}
-import org.kokho.scheduling_new.JobStream
+import org.kokho.scheduling_new.{Job, JobStream, IdleJob}
 
 import scala.collection.immutable.ListSet
 
@@ -18,16 +16,35 @@ import scala.collection.immutable.ListSet
  * @date: 6/25/15.
  */
 
-case class SchedulerHelper(time: Int, waitingJobs: Set[ActiveJob] = ListSet.empty)(implicit val priority: Ordering[Job]) {
+class SchedulerHelper private (val time: Int,
+                               val incompletedJobs: Set[ActiveJob],
+                               val jobStream: JobStream)(implicit val priority: Ordering[Job]) {
 
+  assert(incompletedJobs.exists(_.isComplete), "There must not be completed jobs")
+  assert(incompletedJobs.exists(_.job.deadline <= time), "There must not be overdue jobs")
+  assert(incompletedJobs.exists(_.job.release > time), "There must not be jobs are not released yet")
 
-  def schedule(jobStream: JobStream) = {
-    val activeJobs = waitingJobs ++ jobStream.produceAt(time)
+  lazy val slackStream:Stream[SlackPeriod] = minJob match {
+    case IdleJob => SlackPeriod(time) #:: nextState().slackStream
+    case _ => nextState().slackStream
+  }
+  val releasedJobs = jobStream.produceAt(time)
+  val activeJobs = incompletedJobs ++ releasedJobs.map(ActiveJob(_, 0))
+  val minJob = activeJobs.min.job
+  val scheduledJob = ScheduledJob(time, time+1, minJob)
 
+  def nextState() = {
+    def executeMinJob(aj: ActiveJob) = if (aj.job == minJob) aj.execute() else aj
 
+    val nextIncompletedJobs = activeJobs.map(executeMinJob).filter(_.nonComplete)
+
+    new SchedulerHelper(time + 1, nextIncompletedJobs, jobStream)
   }
   
-  
+  def updateStream(js: JobStream) = new SchedulerHelper(time, incompletedJobs, js)
+
+
+
 /*
   private def releaseJobs() = activeJobs ++ jobs.produceAt(globalTime).map(ActiveJob(_))
 
@@ -40,7 +57,6 @@ case class SchedulerHelper(time: Int, waitingJobs: Set[ActiveJob] = ListSet.empt
 
   private var activeJobs: Set[SchedulerHelper#ActiveJob] = ListSet.empty
 
-  implicit def activeJobOrdering: Ordering[SchedulerHelper#ActiveJob] = Ordering.by(_.job)
 
   def isActive(job: Job) = activeJobs.exists(_.job == job)
 
@@ -88,16 +104,25 @@ case class SchedulerHelper(time: Int, waitingJobs: Set[ActiveJob] = ListSet.empt
     }*/
 }
 
+object SchedulerHelper {
+
+  implicit def activeJobOrdering: Ordering[ActiveJob] = Ordering.by(_.job)
+
+  def apply(js: JobStream) = new SchedulerHelper(0, ListSet(ActiveJob(IdleJob, 0)), js)
+
+}
 
 /**
  * Represents a job in the schedule that is currently being active
  */
-protected case class ActiveJob(job: Job, executedFor: Int = 0) {
+private case class ActiveJob(job: Job, executedFor: Int = 0) {
   def execute() = {
     assert(!isComplete, "Trying to execute already completed job")
     ActiveJob(job, executedFor + 1)
   }
 
   def isComplete = job.length == executedFor
+
+  def nonComplete = !isComplete
 
 }

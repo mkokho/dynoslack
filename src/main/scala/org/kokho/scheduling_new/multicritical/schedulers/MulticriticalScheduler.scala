@@ -33,8 +33,9 @@ abstract class MulticriticalScheduler(val partition: Seq[Seq[MulticriticalTask]]
    */
   def hiTasks: Seq[HiCriticalTask] = tasks collect { case task: HiCriticalTask => task}
 
+  def toJobStream(ts: Seq[Task]): JobStream = ts.map(toJobStream).reduce(_ merge _)
 
-  def toJobStream(task: Task) = new JobStream {
+  def toJobStream(task: Task): JobStream = new JobStream {
     override def produce(): Iterator[Job] = task.jobs()
 
     override def produce(from: Int): Iterator[Job] = task.jobs(from)
