@@ -9,8 +9,8 @@ In particular, it contains implementations of the following algorithms for *Elas
 *  Scheduling with multiprocessor slack reclamation
 
 
- Overview
- ------------
+--------
+###  Overview ###
 
 The core traits of the package are *Job*, *Task*, and *Scheduler*. 
 
