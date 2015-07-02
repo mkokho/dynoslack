@@ -18,12 +18,14 @@ trait PeriodicTask extends Task {
   override def deadline: Int = period
 
   override def jobs(from: Int): Iterator[JobType] = {
-    val start = if (from <= self.offset) {
+    val idx = if (from <= self.offset) {
       0
     } else {
       //the job is produced at the end of the current period
       Math.ceil((from - self.offset).toDouble / period).toInt
     }
+
+    val start = self.offset + idx*period
 
     Iterator.from(start, self.period).map(buildJob)
   }

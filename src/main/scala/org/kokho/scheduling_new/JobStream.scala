@@ -81,8 +81,4 @@ object JobStream {
     override def produce(): Iterator[Job] = js.iterator
   }
 
-//  def apply(t: Task): JobSequence = apply(Seq(t))
-
-//  def apply(tasks: Seq[Task]): JobSequence = new JobSequenceTasks(tasks)
-
 }

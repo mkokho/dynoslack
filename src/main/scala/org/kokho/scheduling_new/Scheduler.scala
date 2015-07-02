@@ -19,7 +19,7 @@ trait Scheduler {
   /**
    * Tasks that are being scheduled
    */
-  def tasks: Set[AllowedTasks]
+  def tasks: Seq[AllowedTasks]
 
   /**
    * The number of processors used by the scheduler

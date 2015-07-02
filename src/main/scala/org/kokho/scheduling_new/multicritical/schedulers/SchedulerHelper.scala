@@ -1,6 +1,6 @@
 package org.kokho.scheduling_new.multicritical.schedulers
 
-import org.kokho.scheduling_new.{Job, JobStream, IdleJob}
+import org.kokho.scheduling_new.{ScheduledJob, Job, JobStream, IdleJob}
 
 import scala.collection.immutable.ListSet
 
@@ -11,27 +11,26 @@ import scala.collection.immutable.ListSet
  * and implicit ordering, choose what job will be scheduled.
  *
  *
- *
  * @author: Mikhail Kokho
  * @date: 6/25/15.
  */
 
-class SchedulerHelper private (val time: Int,
-                               val incompletedJobs: Set[ActiveJob],
-                               val jobStream: JobStream)(implicit val priority: Ordering[Job]) {
+class SchedulerHelper private(val time: Int,
+                              val incompletedJobs: Set[ActiveJob],
+                              val jobStream: JobStream)(implicit val priority: Ordering[Job]) {
 
   assert(incompletedJobs.exists(_.isComplete), "There must not be completed jobs")
   assert(incompletedJobs.exists(_.job.deadline <= time), "There must not be overdue jobs")
   assert(incompletedJobs.exists(_.job.release > time), "There must not be jobs are not released yet")
 
-  lazy val slackStream:Stream[SlackPeriod] = minJob match {
-    case IdleJob => SlackPeriod(time) #:: nextState().slackStream
+  lazy val slackStream: Stream[SlackUnit] = minJob match {
+    case IdleJob => SlackUnit(time) #:: nextState().slackStream
     case _ => nextState().slackStream
   }
   val releasedJobs = jobStream.produceAt(time)
   val activeJobs = incompletedJobs ++ releasedJobs.map(ActiveJob(_, 0))
   val minJob = activeJobs.min.job
-  val scheduledJob = ScheduledJob(time, time+1, minJob)
+  val scheduledJob = ScheduledJob(time, time + 1, minJob)
 
   def nextState() = {
     def executeMinJob(aj: ActiveJob) = if (aj.job == minJob) aj.execute() else aj
@@ -40,82 +39,51 @@ class SchedulerHelper private (val time: Int,
 
     new SchedulerHelper(time + 1, nextIncompletedJobs, jobStream)
   }
-  
-  def updateStream(js: JobStream) = new SchedulerHelper(time, incompletedJobs, js)
+
+  def update(js: JobStream) = new SchedulerHelper(time, incompletedJobs, js)
+
+  def availableSlack(before: Int) = slackStream.takeWhile(_.start < before).length
 
 
+  /*
 
-/*
-  private def releaseJobs() = activeJobs ++ jobs.produceAt(globalTime).map(ActiveJob(_))
+    def isActive(job: Job) = activeJobs.exists(_.job == job)
 
+    def isActive(task: Task) = activeJobs.exists(_.job.isOfTask(task))
 
+    def isBusy = activeJobs.nonEmpty
 
+    def simulate(duration: Int): Seq[ScheduledJob] = {
+      require(duration > 0, s"Parameter must be positive. Actual: $duration")
+      val simulator = updated(jobs)
 
+      for (_ <- 1 to duration)
+      yield simulator.execute()
+    }
 
+    def updated(newSeq: JobSequence) = {
+      val that = new SchedulerHelper(newSeq)(priority)
+      that.globalTime = this.globalTime
+      that.activeJobs = this.activeJobs
+      that
+    }
+  */
 
-  private var globalTime = 0
+  implicit def activeJobOrdering: Ordering[ActiveJob] = Ordering.by(_.job)
 
-  private var activeJobs: Set[SchedulerHelper#ActiveJob] = ListSet.empty
-
-
-  def isActive(job: Job) = activeJobs.exists(_.job == job)
-
-  def isActive(task: Task) = activeJobs.exists(_.job.isOfTask(task))
-
-  def isBusy = activeJobs.nonEmpty
-
-  def time = globalTime
-
-
-  def simulate(duration: Int): Seq[ScheduledJob] = {
-    require(duration > 0, s"Parameter must be positive. Actual: $duration")
-    val simulator = updated(jobs)
-
-    for (_ <- 1 to duration)
-    yield simulator.execute()
-  }
-
-  def updated(newSeq: JobSequence) = {
-    val that = new SchedulerHelper(newSeq)(priority)
-    that.globalTime = this.globalTime
-    that.activeJobs = this.activeJobs
-    that
-  }
-
-  def execute(): ScheduledJob = {
-    releaseJobs()
-    globalTime = globalTime + 1
-
-    ScheduledJob(globalTime - 1, globalTime, executeJob())
-  }
-
-
-  private def executeJob(): Job =
-    if (activeJobs.isEmpty) IdleJob
-    else {
-      val jobExec = activeJobs.min
-      val newJob = jobExec.execute()
-
-      activeJobs = activeJobs - jobExec
-      if (!newJob.isComplete)
-        activeJobs = activeJobs + newJob
-
-      jobExec.job
-    }*/
 }
 
 object SchedulerHelper {
 
-  implicit def activeJobOrdering: Ordering[ActiveJob] = Ordering.by(_.job)
 
-  def apply(js: JobStream) = new SchedulerHelper(0, ListSet(ActiveJob(IdleJob, 0)), js)
+  def apply(js: JobStream)(implicit priority: Ordering[Job]) = new SchedulerHelper(0, ListSet(ActiveJob(IdleJob, 0)), js)
 
 }
 
 /**
  * Represents a job in the schedule that is currently being active
  */
-private case class ActiveJob(job: Job, executedFor: Int = 0) {
+case class ActiveJob(job: Job, executedFor: Int = 0) {
   def execute() = {
     assert(!isComplete, "Trying to execute already completed job")
     ActiveJob(job, executedFor + 1)

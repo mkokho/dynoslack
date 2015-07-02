@@ -23,5 +23,29 @@ class LoCriticalTaskDefault(val period: Int,
     new LoCriticalTaskDefault(period, execution, earlyReleases, time, Some(relationWith))
   }
 
+  override def equals(that: Any): Boolean =
+    that match {
+      case that: LoCriticalTaskDefault => that.canEqual(this) && this.hashCode == that.hashCode
+      case _ => false
+    }
+
+  def canEqual(a: Any) = a.isInstanceOf[LoCriticalTaskDefault]
+
+  override def hashCode:Int = {
+    //tasks that are not children of any other tasks are different
+    if (relatedTo.isEmpty) super.hashCode
+    //otherwise they are equal if has the same parameters
+    else {
+      val prime = 31
+      var result = 1
+      result = prime * result + period
+      result = prime * result + execution
+      result = prime * result + offset
+      result = prime * result + earlyReleases.hashCode()
+      result = prime * result + relatedTo.get.hashCode()
+      result
+    }
+  }
+
   //  override def isChildOf(thatTask: LoCriticalTask): Boolean = false
 }

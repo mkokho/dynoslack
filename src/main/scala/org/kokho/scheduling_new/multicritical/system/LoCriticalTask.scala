@@ -38,6 +38,9 @@ trait LoCriticalTask extends MulticriticalTask {
 
   def canReleaseEarlyJob(time: Int): Boolean = earlyReleases.contains(toRelativeTime(time))
 
+  /**
+   * Returns how much slack is needed to satisfy early release of a job
+   */
   def demand(time: Int): Int = {
     val er = toRelativeTime(time)
     execution - (execution * er ) / period

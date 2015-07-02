@@ -19,9 +19,9 @@ abstract class MulticriticalScheduler(val partition: Seq[Seq[MulticriticalTask]]
   override def arity: Int = partition.size
 
   /**
-   * Low-criticality tasks that are being scheduled by this scheduler
+   * High-criticality tasks that are being scheduled by this scheduler
    */
-  def loTasks: Seq[LoCriticalTask] = tasks collect { case task: LoCriticalTask => task}
+  def hiTasks: Seq[HiCriticalTask] = tasks collect { case task: HiCriticalTask => task}
 
   /**
    * Tasks that are being scheduled
@@ -29,15 +29,8 @@ abstract class MulticriticalScheduler(val partition: Seq[Seq[MulticriticalTask]]
   override def tasks: Seq[MulticriticalTask] = partition.flatten
 
   /**
-   * High-criticality tasks that are being scheduled by this scheduler
+   * Low-criticality tasks that are being scheduled by this scheduler
    */
-  def hiTasks: Seq[HiCriticalTask] = tasks collect { case task: HiCriticalTask => task}
+  def loTasks: Seq[LoCriticalTask] = tasks collect { case task: LoCriticalTask => task}
 
-  def toJobStream(ts: Seq[Task]): JobStream = ts.map(toJobStream).reduce(_ merge _)
-
-  def toJobStream(task: Task): JobStream = new JobStream {
-    override def produce(): Iterator[Job] = task.jobs()
-
-    override def produce(from: Int): Iterator[Job] = task.jobs(from)
-  }
 }
