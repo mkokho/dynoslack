@@ -1,11 +1,10 @@
 package org.kokho.scheduling_new.utils
 
-import org.kokho.scheduling_new.multicritical.system.LoCriticalTask
 import org.kokho.scheduling_new._
+import org.kokho.scheduling_new.multicritical.system.LoCriticalTask
 
 import scala.collection.immutable.HashSet
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * Created with IntelliJ IDEA on 6/7/2015.
@@ -137,8 +136,6 @@ class SchedulerAnalyzer(val scheduler: Scheduler,
 
   def findOverdueJobs(): Seq[Seq[ScheduledJob]] = jobsStream.map(findOverdueJobs)
 
-  private def findOverdueJobs(jobs: Seq[ScheduledJob]) = jobs.filter(_.isOverdue)
-
   def findUncompletedJobs(idx: Int): Seq[Job] = {
     require(idx < jobsStream.size)
     findUncompletedJobs(jobsStream(idx))
@@ -148,6 +145,8 @@ class SchedulerAnalyzer(val scheduler: Scheduler,
     require(idx < jobsStream.size)
     findOverdueJobs(jobsStream(idx))
   }
+
+  private def findOverdueJobs(jobs: Seq[ScheduledJob]) = jobs.filter(_.isOverdue)
 
   private def isOrdered(seq: Seq[ScheduledJob]) = {
     val res = seq.sliding(2).find(pair => pair(0).to > pair(1).from)
@@ -178,7 +177,11 @@ class SchedulerAnalyzer(val scheduler: Scheduler,
    * This methods transforms a schedule to sequences that contains jobs for each processor
    */
   private def toJobSequences(scheduler: Scheduler, limit: Int): Seq[Seq[ScheduledJob]] = {
-    val res = scheduler.schedule(limit).toSeq.transpose(s => s)
+//    def helper(itr: Iterator[Seq[ScheduledJob]], acc: Seq[Seq[ScheduledJob]]): Seq[Seq[ScheduledJob]] ={
+//      acc = acc + itr.next().transpose
+//    }
+
+    val res = scheduler.schedule(limit).toSeq.transpose
     if (fixedMemory || res.flatMap(findUncompletedJobs).isEmpty)
       res
     else {

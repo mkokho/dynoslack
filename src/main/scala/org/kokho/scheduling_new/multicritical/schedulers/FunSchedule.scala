@@ -1,6 +1,6 @@
 package org.kokho.scheduling_new.multicritical.schedulers
 
-import org.kokho.scheduling_new.{ScheduledJob, Job, JobStream, IdleJob}
+import org.kokho.scheduling_new._
 
 import scala.collection.immutable.ListSet
 
@@ -45,12 +45,13 @@ class FunSchedule private(val time: Int,
 
   def availableSlack(before: Int) = slackStream.takeWhile(_.start < before).length
 
+  def isActive(task: Task) = activeJobs.exists(_.job.isOfTask(task))
+
 
   /*
 
     def isActive(job: Job) = activeJobs.exists(_.job == job)
 
-    def isActive(task: Task) = activeJobs.exists(_.job.isOfTask(task))
 
     def isBusy = activeJobs.nonEmpty
 

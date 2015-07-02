@@ -1,7 +1,7 @@
 package org.kokho.scheduling_new.multicritical.schedulers
 
+import org.kokho.scheduling_new.ScheduledJob
 import org.kokho.scheduling_new.multicritical.system.{LoCriticalTask, MulticriticalTask}
-import org.kokho.scheduling_new.{ScheduledJob}
 
 /**
  * Mutable class that handles management of early releases
@@ -9,13 +9,16 @@ import org.kokho.scheduling_new.{ScheduledJob}
  * @author: Mikhail Kokho
  * @date 7/2/15.
  */
-class MulticriticalWorker(private var tasks: Seq[MulticriticalTask]) extends EdfOrdering{
+class MulticriticalWorker(private var tasks: Seq[MulticriticalTask]) extends EdfHiFirstOrdering {
 
   private var schedule: FunSchedule = FunSchedule(tasks)
 
-  def tasksForEarlyRelease = tasks.collect {case loTask: LoCriticalTask => loTask}.filter(_.canReleaseEarlyJob(currentTime))
-
-  def currentTime = schedule.time
+  def tasksForEarlyRelease =
+    for {
+      loTask:LoCriticalTask <- tasks collect { case t: LoCriticalTask => t}
+      if loTask.canReleaseEarlyJob(currentTime)
+      if !schedule.isActive(loTask)
+    } yield loTask
 
   def isLocalPossible(loTask: LoCriticalTask) = tasks.contains(loTask) && {
     val deadline = currentTime + loTask.period
@@ -23,19 +26,19 @@ class MulticriticalWorker(private var tasks: Seq[MulticriticalTask]) extends Edf
     schedule.availableSlack(deadline) >= demand
   }
 
+  def currentTime = schedule.time
+
   def releaseEarlyJob(loTask: LoCriticalTask) = {
-    val idx  = tasks.indexOf(loTask)
+    val idx = tasks.indexOf(loTask)
     tasks = tasks.updated(idx, loTask.shift(currentTime))
     schedule = schedule.update(tasks)
   }
 
-  def next():ScheduledJob = {
+  def next(): ScheduledJob = {
     val job = schedule.scheduledJob
     schedule = schedule.nextState()
     job
   }
-
-
 
 
 }
