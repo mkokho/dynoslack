@@ -30,5 +30,7 @@ case class ScheduledJob(from: Int, to: Int, scheduledJob: Job) {
 
   def isIdle = scheduledJob == IdleJob
 
+  def isOverdue = to > scheduledJob.deadline
+
   override def toString: String = scheduledJob + "->" + from + ":" + to
 }

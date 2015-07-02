@@ -73,12 +73,22 @@ trait JobStream {
  */
 object JobStream {
 
-  val empty = toJobStream(List.empty)
+  val empty = new JobStream {
+    override def produce(): Iterator[Job] = Iterator.empty
+  }
 
   implicit def toJobStream(j: Job): JobStream = toJobStream(List(j))
   
   implicit def toJobStream(js: List[Job]): JobStream = new JobStream {
     override def produce(): Iterator[Job] = js.iterator
+  }
+
+  implicit def toJobStream(ts: Seq[Task]): JobStream = ts.map(toJobStream).reduce(_ merge _)
+
+  implicit def toJobStream(task: Task): JobStream = new JobStream {
+    override def produce(): Iterator[Job] = task.jobs()
+
+    override def produce(from: Int): Iterator[Job] = task.jobs(from)
   }
 
 }

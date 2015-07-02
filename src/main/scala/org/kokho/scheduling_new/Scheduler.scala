@@ -13,6 +13,7 @@ import org.kokho.scheduling.exceptions.UnschedulableSetException
  *
  */
 trait Scheduler {
+  scheduler =>
 
   type AllowedTasks <: Task
 
@@ -27,16 +28,21 @@ trait Scheduler {
   def arity: Int
 
   /**
-   * Jobs that will be scheduled next.
-   * @return a sequence of size $this.arity
+   * Infinite iterator over a sequence of scheduled jobs
    */
-  def next(): Seq[ScheduledJob]
+  def iterate(): Iterator[Seq[ScheduledJob]]
 
 
   /**
    * Iterator over the scheduled jobs
    */
-  def schedule(): Iterator[Seq[ScheduledJob]] = Iterator.continually(next())
+  def schedule(p: Seq[ScheduledJob] => Boolean): Schedule = new Schedule {
+
+    override def iterator: Iterator[Seq[ScheduledJob]] = iterate().takeWhile(p).toList.iterator
+
+  }
+
+  def schedule(until: Int): Schedule = this.schedule(seq => seq(0).to <= until)
 
 }
 

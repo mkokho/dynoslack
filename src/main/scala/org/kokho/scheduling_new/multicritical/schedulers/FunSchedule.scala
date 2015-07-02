@@ -10,18 +10,19 @@ import scala.collection.immutable.ListSet
  * Its purpose is to maintain a set of active jobs and, given a job stream
  * and implicit ordering, choose what job will be scheduled.
  *
+ * We make this class immutable to allow easy computations and predictions
  *
  * @author: Mikhail Kokho
  * @date: 6/25/15.
  */
 
-class SchedulerHelper private(val time: Int,
+class FunSchedule private(val time: Int,
                               val incompletedJobs: Set[ActiveJob],
                               val jobStream: JobStream)(implicit val priority: Ordering[Job]) {
 
-  assert(incompletedJobs.exists(_.isComplete), "There must not be completed jobs")
-  assert(incompletedJobs.exists(_.job.deadline <= time), "There must not be overdue jobs")
-  assert(incompletedJobs.exists(_.job.release > time), "There must not be jobs are not released yet")
+  assert(incompletedJobs.forall(!_.isComplete), "There must not be completed jobs")
+  assert(incompletedJobs.forall(_.job.deadline > time), "There must not be overdue jobs")
+  assert(incompletedJobs.forall(_.job.release <= time), "There must not be jobs are not released yet")
 
   lazy val slackStream: Stream[SlackUnit] = minJob match {
     case IdleJob => SlackUnit(time) #:: nextState().slackStream
@@ -37,10 +38,10 @@ class SchedulerHelper private(val time: Int,
 
     val nextIncompletedJobs = activeJobs.map(executeMinJob).filter(_.nonComplete)
 
-    new SchedulerHelper(time + 1, nextIncompletedJobs, jobStream)
+    new FunSchedule(time + 1, nextIncompletedJobs, jobStream)
   }
 
-  def update(js: JobStream) = new SchedulerHelper(time, incompletedJobs, js)
+  def update(js: JobStream) = new FunSchedule(time, incompletedJobs, js)
 
   def availableSlack(before: Int) = slackStream.takeWhile(_.start < before).length
 
@@ -73,10 +74,10 @@ class SchedulerHelper private(val time: Int,
 
 }
 
-object SchedulerHelper {
+object FunSchedule {
 
 
-  def apply(js: JobStream)(implicit priority: Ordering[Job]) = new SchedulerHelper(0, ListSet(ActiveJob(IdleJob, 0)), js)
+  def apply(js: JobStream)(implicit priority: Ordering[Job]) = new FunSchedule(0, ListSet(ActiveJob(IdleJob, 0)), js)
 
 }
 

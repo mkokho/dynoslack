@@ -21,6 +21,11 @@ trait Job {
 
   def releasedBy: Option[Task] = None
 
+  def isOfTask(task: Task): Boolean = releasedBy match {
+    case None => false
+    case Some(t) => task == t
+  }
+
   override def toString: String = releasedBy match {
     case None => s"Job($length in $release:$deadline)"
     case Some(task) => s"${task.name}($length in $release:$deadline)"
