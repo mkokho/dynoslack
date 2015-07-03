@@ -11,13 +11,13 @@ trait JobStream {
   /**
    * Returns jobs in order of their release times
    */
-  def produce(): Iterator[Job]
+  def produce(): Iterator[Job] = produce(0)
 
 
   /**
    * Returns jobs that are released after or at $from in order of their release times
    */
-  def produce(from: Int): Iterator[Job] = produce().dropWhile(_.release < from)
+  def produce(from: Int): Iterator[Job]
 
   /**
    * Returns jobs that are released in the period $from to $to (both inclusive)
@@ -40,6 +40,10 @@ trait JobStream {
       val jobsSelf = self.produce(from).buffered
       mergeJobs(jobsSelf, jobsThat)
     }
+  }
+  
+  def remove(removedJob: Job): JobStream = new JobStream {
+    override def produce(from: Int): Iterator[Job] = self.produce(from).filter(_ != removedJob)
   }
 
   /**
@@ -74,20 +78,18 @@ trait JobStream {
 object JobStream {
 
   val empty = new JobStream {
-    override def produce(): Iterator[Job] = Iterator.empty
+    override def produce(from: Int): Iterator[Job] = Iterator.empty
   }
 
   implicit def toJobStream(j: Job): JobStream = toJobStream(List(j))
   
   implicit def toJobStream(js: List[Job]): JobStream = new JobStream {
-    override def produce(): Iterator[Job] = js.iterator
+    override def produce(from: Int): Iterator[Job] = js.dropWhile(_.release < from).iterator
   }
 
   implicit def toJobStream(ts: Seq[Task]): JobStream = ts.map(toJobStream).reduce(_ merge _)
 
   implicit def toJobStream(task: Task): JobStream = new JobStream {
-    override def produce(): Iterator[Job] = task.jobs()
-
     override def produce(from: Int): Iterator[Job] = task.jobs(from)
   }
 

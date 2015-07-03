@@ -17,21 +17,24 @@ import scala.collection.immutable.ListSet
  */
 
 class FunSchedule private(val time: Int,
-                              val incompletedJobs: Set[ActiveJob],
-                              val jobStream: JobStream)(implicit val priority: Ordering[Job]) {
+                          val incompletedJobs: Set[ActiveJob],
+                          val jobStream: JobStream)(implicit val priority: Ordering[Job]) {
 
   assert(incompletedJobs.forall(!_.isComplete), "There must not be completed jobs")
-  assert(incompletedJobs.forall(_.job.deadline > time), "There must not be overdue jobs")
+  assert(incompletedJobs.forall(_.job.deadline > time), s"There is an overdue job at time $time: ${incompletedJobs.find(_.job.deadline <= time)}")
   assert(incompletedJobs.forall(_.job.release <= time), "There must not be jobs are not released yet")
 
-  lazy val slackStream: Stream[SlackUnit] = minJob match {
-    case IdleJob => SlackUnit(time) #:: nextState().slackStream
-    case _ => nextState().slackStream
-  }
   val releasedJobs = jobStream.produceAt(time)
   val activeJobs = incompletedJobs ++ releasedJobs.map(ActiveJob(_, 0))
   val minJob = activeJobs.min.job
   val scheduledJob = ScheduledJob(time, time + 1, minJob)
+
+  def slackStream(to: Int): Stream[SlackUnit] =
+    if (time >= to) Stream.empty
+    else minJob match {
+      case IdleJob => SlackUnit(time) #:: nextState().slackStream(to)
+      case _ => nextState().slackStream(to)
+    }
 
   def nextState() = {
     def executeMinJob(aj: ActiveJob) = if (aj.job == minJob) aj.execute() else aj
@@ -43,7 +46,7 @@ class FunSchedule private(val time: Int,
 
   def update(js: JobStream) = new FunSchedule(time, incompletedJobs, js)
 
-  def availableSlack(before: Int) = slackStream.takeWhile(_.start < before).length
+//  def availableSlack(before: Int) = slackStream.takeWhile(_.start < before).length
 
   def isActive(task: Task) = activeJobs.exists(_.job.isOfTask(task))
 
@@ -76,7 +79,6 @@ class FunSchedule private(val time: Int,
 }
 
 object FunSchedule {
-
 
   def apply(js: JobStream)(implicit priority: Ordering[Job]) = new FunSchedule(0, ListSet(ActiveJob(IdleJob, 0)), js)
 

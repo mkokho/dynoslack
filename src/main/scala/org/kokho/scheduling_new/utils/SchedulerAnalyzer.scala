@@ -52,7 +52,7 @@ class SchedulerAnalyzer(val scheduler: Scheduler,
     def fiterAndMerge(seq: Seq[ScheduledJob]) = mergeScheduledJobs(seq.filter(_.scheduledJob.isOfTask(task)))
 
     require(scheduler.tasks.contains(task), "There is no such task in the schedule")
-    jobsStream.map(fiterAndMerge).flatten
+    jobsStream.map(fiterAndMerge).flatten.sortBy(_.from)
   }
 
   def debugInfo(from: Int, length: Int): String = {
@@ -66,6 +66,11 @@ class SchedulerAnalyzer(val scheduler: Scheduler,
     jobsStream map mergeScheduledJobs foreach println
   }
 
+  def jobStream(idx: Int): Seq[ScheduledJob] = {
+    require(idx < jobsStream.size)
+    mergeScheduledJobs(jobsStream(idx))
+  }
+
   private def mergeScheduledJobs(jobsFlow: Seq[ScheduledJob]): Seq[ScheduledJob] = {
     val reverseSchedule = jobsFlow.foldLeft(List[ScheduledJob]())(
       (acc, sJob) => acc match {
@@ -76,11 +81,6 @@ class SchedulerAnalyzer(val scheduler: Scheduler,
     )
 
     reverseSchedule.reverse
-  }
-
-  def jobStream(idx: Int): Seq[ScheduledJob] = {
-    require(idx < jobsStream.size)
-    mergeScheduledJobs(jobsStream(idx))
   }
 
   def findDoubleReleases(): Option[Job] = {

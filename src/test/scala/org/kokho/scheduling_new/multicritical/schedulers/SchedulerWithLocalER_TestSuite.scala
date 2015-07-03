@@ -8,7 +8,7 @@ import org.scalatest.{FlatSpec, Matchers}
  * Created with IntelliJ IDEA on 6/3/15.
  * @author: Mikhail Kokho
  */
-class LocalER_ScheduleTestSuite extends FlatSpec
+class SchedulerWithLocalER_TestSuite extends FlatSpec
 with Matchers
 with MulticriticalSchedulerBehavior {
 

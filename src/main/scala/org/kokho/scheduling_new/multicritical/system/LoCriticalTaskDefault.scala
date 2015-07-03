@@ -1,7 +1,5 @@
 package org.kokho.scheduling_new.multicritical.system
 
-import org.kokho.scheduling.{PeriodicJob, PeriodicTask}
-
 /**
  * Created with IntelliJ IDEA on 6/4/15.
  * @author: Mikhail Kokho
@@ -16,7 +14,7 @@ class LoCriticalTaskDefault(val period: Int,
   require(earlyReleases.forall(release => release >= execution && release < period))
 
   override def shift(time: Int): LoCriticalTask = {
-    require(canReleaseEarlyJob(time) || toRelativeTime(time) == 0, s"Cannot release job at time $time")
+    require(canReleaseEarlyJob(time), s"Task ${this} cannot release an early job at time $time")
 
     val relationWith = relatedTo.getOrElse(this)
 
@@ -46,6 +44,4 @@ class LoCriticalTaskDefault(val period: Int,
       result
     }
   }
-
-  //  override def isChildOf(thatTask: LoCriticalTask): Boolean = false
 }

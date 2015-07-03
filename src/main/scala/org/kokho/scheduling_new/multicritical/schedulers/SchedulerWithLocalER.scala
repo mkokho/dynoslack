@@ -1,9 +1,7 @@
 package org.kokho.scheduling_new.multicritical.schedulers
 
-import org.kokho.scheduling_new.{Task, ScheduledJob}
-import org.kokho.scheduling_new.multicritical.system.{LoCriticalTask, MulticriticalTask}
-
-import scala.collection.mutable
+import org.kokho.scheduling_new.ScheduledJob
+import org.kokho.scheduling_new.multicritical.system.MulticriticalTask
 
 
 /**
@@ -21,27 +19,16 @@ class SchedulerWithLocalER(override val partition: Seq[Seq[MulticriticalTask]]) 
    */
   override def iterate() = new Iterator[Seq[ScheduledJob]]{
 
-    val schedules = self.partition.map(new MulticriticalWorker(_))
-
     override def hasNext: Boolean = true
 
+    val schedulingWorkers = self.partition.map(new MulticriticalWorker(_))
+
     override def next(): Seq[ScheduledJob] = {
-      releaseLocally(schedules)
-      val jobs = schedules.map(_.next())
+      schedulingWorkers.foreach(_.releaseLocally())
+      val jobs = schedulingWorkers.map(_.next())
       jobs
     }
 
   }
-
-  private def releaseLocally(schedules: Seq[MulticriticalWorker]) = {
-    for {
-      sch <- schedules
-      loTask <- sch.tasksForEarlyRelease
-      if sch.isLocalPossible(loTask)
-    } {
-      sch.releaseEarlyJob(loTask)
-    }
-  }
-
 
 }

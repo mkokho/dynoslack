@@ -1,7 +1,8 @@
 package org.kokho.scheduling_new.multicritical.schedulers
 
-import org.kokho.scheduling_new.ScheduledJob
+import org.kokho.scheduling_new.JobStream._
 import org.kokho.scheduling_new.multicritical.system.{LoCriticalTask, MulticriticalTask}
+import org.kokho.scheduling_new.{Job, ScheduledJob, Task}
 
 /**
  * Mutable class that handles management of early releases
@@ -13,26 +14,59 @@ class MulticriticalWorker(private var tasks: Seq[MulticriticalTask]) extends Edf
 
   private var schedule: FunSchedule = FunSchedule(tasks)
 
+  def releaseLocally() = tasksForEarlyRelease map { loTask =>
+    val demand = loTask.demand(currentTime)
+    val deadline = currentTime + loTask.period
+
+    if (slackUntil(deadline) >= demand) {
+      val earlyJob = extractEarlyJob(loTask)
+      insertEarlyJob(earlyJob)
+    }
+  }
+
   def tasksForEarlyRelease =
     for {
-      loTask:LoCriticalTask <- tasks collect { case t: LoCriticalTask => t}
+      loTask: LoCriticalTask <- tasks collect { case t: LoCriticalTask => t}
       if loTask.canReleaseEarlyJob(currentTime)
-      if !schedule.isActive(loTask)
+      if notActive(loTask)
     } yield loTask
 
-  def isLocalPossible(loTask: LoCriticalTask) = tasks.contains(loTask) && {
-    val deadline = currentTime + loTask.period
-    val demand = loTask.demand(currentTime)
-    schedule.availableSlack(deadline) >= demand
+  def notActive(task: Task) = !isActive(task)
+
+  def isActive(task: Task) = schedule.isActive(task)
+
+  def slackUntil(to: Int) = slackBetween(currentTime, to)
+
+  def slackBetween(from: Int, to: Int) =
+    schedule
+      .slackStream(to)
+      .dropWhile(_.start < from)
+      .length
+
+  def extractEarlyJob(loTask: LoCriticalTask): Job = {
+    //shift the task and release an early job
+    val nextLoTask = loTask.shift(currentTime)
+    val earlyJob = nextLoTask.jobs(currentTime).next()
+
+    //update the task in the mutable variable
+    val idx = tasks.indexOf(loTask)
+    tasks = tasks.updated(idx, nextLoTask)
+
+    //update jobs streams in our FunSchedule
+    //note that we exclude the released job from this schedule
+    schedule = schedule.update(toJobStream(tasks).remove(earlyJob))
+
+    //return the released job
+    earlyJob
+  }
+
+  def insertEarlyJob(earlyJob: Job) = {
+    assert(earlyJob.release >= currentTime)
+    val newJobStream = schedule.jobStream.insert(earlyJob)
+    schedule = schedule.update(newJobStream)
   }
 
   def currentTime = schedule.time
-
-  def releaseEarlyJob(loTask: LoCriticalTask) = {
-    val idx = tasks.indexOf(loTask)
-    tasks = tasks.updated(idx, loTask.shift(currentTime))
-    schedule = schedule.update(tasks)
-  }
 
   def next(): ScheduledJob = {
     val job = schedule.scheduledJob
