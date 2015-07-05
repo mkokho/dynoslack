@@ -1,4 +1,4 @@
-name := "Scheduling of Multicritical Time Systems"
+name := "Scheduling of Multicritical Real-Time Systems"
 
 version := "1.0"
 
