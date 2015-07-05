@@ -10,11 +10,11 @@ import scala.collection.immutable.HashSet
  * @author: Mikhail Kokho
  * @date: 6/7/2015
  */
-class SchedulerAnalyzer(val scheduler: Scheduler, val memory: Int = 30) {
+class SchedulerAnalyzer(val scheduler: Scheduler, val until: Int = 30) {
 
 
   lazy val taskToJobs = computeTaskToJobs()
-  lazy val coreToJobs = toJobSequences(scheduler, memory)
+  lazy val coreToJobs = toJobSequences(scheduler, until)
 
   def totalIdleTime: Int = coreToJobs.map(seqIdleTime).sum
 
@@ -100,25 +100,23 @@ class SchedulerAnalyzer(val scheduler: Scheduler, val memory: Int = 30) {
     migratedJobs.find(_ => true)
   }
 
-  def findUncompletedJobs(): Seq[Seq[Job]] = coreToJobs.map(findUncompletedJobs)
-
   /**
-   * A job is uncompleted if its execution requirements has not been satisfied.
-   * A job is NOT uncopmlete if its deadline is in the future
+   * A job is incorrectly scheduled if it has been executed on the processors 
+   * for the time that is different ffrom the job's length.
+   * A job is NOT incorrectly scheduled if its deadline is in the future
    */
-  def findUncompletedJobs(jobs: Seq[ScheduledJob]) = {
-    val sGrouped: Map[Job, Int] = jobs
-      .filter(!_.isIdle)
+  def findIncorrectlyScheduled(): Option[Job] = {
+    val allJobs = coreToJobs.flatten.filter(!_.isIdle)
+
+    val jobToExecution: Map[Job, Int] = allJobs
       .groupBy(_.scheduledJob)
       .mapValues(ts => ts.foldLeft(0)(_ + _.length))
 
-    {
-      for (
-        j <- sGrouped.keys
-        if j.deadline <= this.memory
-        if j.length != sGrouped(j)
-      ) yield j
-    }.toSeq
+    val uncompletedJob = jobToExecution.find{
+      case (job, exec) => job.deadline <= until && job.length != exec
+    }
+
+    uncompletedJob.map(_._1)
   }
 
   def findOverdueJobs(): Seq[Seq[ScheduledJob]] = coreToJobs.map(findOverdueJobs)
@@ -145,16 +143,5 @@ class SchedulerAnalyzer(val scheduler: Scheduler, val memory: Int = 30) {
    */
   private def toJobSequences(scheduler: Scheduler, limit: Int): Seq[Seq[ScheduledJob]] = {
     scheduler.schedule(limit).toSeq.transpose
-  }
-
-  def debugInfo(from: Int, length: Int): String = {
-    def format(seq: Seq[ScheduledJob]): String =
-      seq.drop(from).take(length).map(_.toString.padTo(31, " ").mkString).mkString
-
-    coreToJobs.map(format).mkString("\n")
-  }
-
-  def printSchedule(limit: Int = 20): Unit = {
-    coreToJobs map mergeScheduledJobs foreach println
   }
 }

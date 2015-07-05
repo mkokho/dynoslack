@@ -1,12 +1,12 @@
 package org.kokho.scheduling
 
-import org.kokho.scheduling
 import org.kokho.scheduling.multicritical.schedulers.SchedulerWithLocalER
-import org.kokho.scheduling.multicritical.system.{MulticriticalTask, LoCriticalTask, HiCriticalTask}
+import org.kokho.scheduling.multicritical.system.{LoCriticalTask, HiCriticalTask}
 import org.scalatest.{Matchers, FunSuite}
 
 /**
- * Created by Mikhail Kokho on 7/4/2015.
+ * @author: Mikhail Kokho
+ * @date: 7/4/2015.
  */
 class SchedulerAnalyzerTests extends FunSuite with Matchers{
 
@@ -48,6 +48,25 @@ class SchedulerAnalyzerTests extends FunSuite with Matchers{
 
   test("computes idle time correctly") {
     analyzer.totalIdleTime shouldBe 1
+  }
+
+  test("finds uncompleted jobs") {
+    val job = Job(0,3,5)
+    val jobUnit = Job(0,1,5)
+    val scheduleUncomplete = Seq(
+      Seq() :+ ScheduledJob(0,1,job) :+ ScheduledJob(0,1,jobUnit),
+      Seq() :+ ScheduledJob(1,2,IdleJob) :+ ScheduledJob(1,2,job))
+
+    val scheduleCopmlete = scheduleUncomplete :+ Seq(ScheduledJob(2,3,IdleJob),ScheduledJob(2,3,job))
+
+    assertResult(Some(job)) {
+      new SchedulerAnalyzer(new SchedulerFixed(scheduleUncomplete)).findIncorrectlyScheduled()
+    }
+
+    assertResult(None) {
+      new SchedulerAnalyzer(new SchedulerFixed(scheduleCopmlete)).findIncorrectlyScheduled()
+    }
+
   }
 
   test("finds migrated jobs") {

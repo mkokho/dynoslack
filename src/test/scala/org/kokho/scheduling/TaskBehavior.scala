@@ -24,6 +24,14 @@ trait TaskBehavior extends Matchers{
       assert(task.utilization == (task.execution.toDouble / task.deadline))
     }
 
+    it should "not fall when toString method is called" in {
+      try{
+        task.toString
+      }catch {
+        case e:Exception => fail("Method toString failed")
+      }
+    }
+
     it must "produce non empty sequence of jobs" in {
       assert(task.jobs().nonEmpty)
     }

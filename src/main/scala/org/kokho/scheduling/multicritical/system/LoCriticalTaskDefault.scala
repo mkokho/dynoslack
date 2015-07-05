@@ -13,6 +13,9 @@ class LoCriticalTaskDefault(val period: Int,
 
   require(earlyReleases.forall(release => release >= execution && release < period))
 
+  override def buildJob(release: Int): LoCriticalJob = new LoCriticalJob(release, this)
+
+
   override def shift(time: Int): LoCriticalTask = {
     require(canReleaseEarlyJob(time), s"Task ${this} cannot release an early job at time $time")
 

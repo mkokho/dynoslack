@@ -10,15 +10,17 @@ import JobStream._
  */
 class JobStreamTestSuite extends FlatSpec with JobStreamBehavior{
 
+  "An Empty JobStream" must behave like anEmptyJobStream(JobStream.empty)
+
   val taskA = HiCriticalTask(9, 5, 5)
   val taskB = HiCriticalTask(7, 5, 5)
   val taskC = HiCriticalTask(3, 1, 1)
 
-  "A Job Sequence of one task" must behave like aJobStream(taskA)
+  "A Job Sequence of one task" must behave like aNonEmptyJobStream(taskA)
 
-  "A merged job sequence" must behave like aJobStream(taskA.merge(taskB))
+  "A merged job sequence" must behave like aNonEmptyJobStream(taskA.merge(taskB))
 
-  "A merged job sequence of three tasks" must behave like aJobStream(Seq(taskA, taskB, taskC))
+  "A merged job sequence of three tasks" must behave like aNonEmptyJobStream(Seq(taskA, taskB, taskC))
 
 
 }

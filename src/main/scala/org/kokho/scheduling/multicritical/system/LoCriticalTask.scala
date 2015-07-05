@@ -28,8 +28,6 @@ trait LoCriticalTask extends MulticriticalTask {
    */
   def shift(time: Int): LoCriticalTask
 
-  override def buildJob(release: Int): LoCriticalJob = new LoCriticalJob(release, this)
-
   /**
    * Given absolute time, calculates the time relative to the period.
    */

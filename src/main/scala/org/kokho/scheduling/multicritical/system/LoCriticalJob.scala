@@ -9,11 +9,9 @@ import org.kokho.scheduling.{PeriodicJob, Task}
  * @author: Mikhail Kokho
  * @date: 6/4/15
  */
-case class LoCriticalJob(release: Int, task: LoCriticalTask) extends PeriodicJob {
+case class LoCriticalJob(release: Int, task: LoCriticalTaskDefault) extends PeriodicJob {
 
-  override def isOfTask(thatTask: Task): Boolean = this.task match {
-    case t: LoCriticalTaskDefault => thatTask == t || t.relatedTo.getOrElse(t) == thatTask
-    case _ => this.task == thatTask
-  }
+  override def isOfTask(thatTask: Task): Boolean =
+    thatTask == this.task || this.task.relatedTo.getOrElse(this.task) == thatTask
 
 }

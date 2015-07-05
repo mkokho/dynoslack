@@ -11,8 +11,12 @@ import scala.util.Random
 trait JobStreamBehavior extends Matchers {
   this: FlatSpec =>
 
-  def aJobStream(js: JobStream): Unit = {
+  def aNonEmptyJobStream(js: JobStream): Unit = {
     val timeLimit = 50000
+
+    it must "produce non empty iterator" in {
+      js.produce().nonEmpty shouldBe true
+    }
 
     it must "produce jobs in order of their release time" in {
       val pairs = js.produce().take(timeLimit).sliding(2)
@@ -36,6 +40,14 @@ trait JobStreamBehavior extends Matchers {
         .filter(j => j.release < from || j.release > to).toList
 
       assert(wrongJobs.isEmpty, s"Test failed: jobs $wrongJobs are out of [$from, $to]")
+    }
+
+  }
+  
+  def anEmptyJobStream(js: JobStream): Unit = {
+
+    it must "produce an empty iterator" in {
+      js.produce().isEmpty shouldBe true
     }
 
   }

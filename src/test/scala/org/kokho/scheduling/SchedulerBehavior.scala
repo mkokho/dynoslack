@@ -1,24 +1,32 @@
 package org.kokho.scheduling
 
-import org.scalatest.FlatSpec
+import org.scalatest.{Matchers, FlatSpec}
 
 /**
  * Created with IntelliJ IDEA on 5/28/15.
  * @author: Mikhail Kokho
  */
-trait SchedulerBehavior {
+trait SchedulerBehavior extends Matchers{
   this: FlatSpec =>
 
-  def aScheduler(scheduler: Scheduler) = {
+  def aNonEmptyScheduler(scheduler: Scheduler) = {
 
-    it must "generate an empty schedule when a set of tasks is empty" in {
-      if (scheduler.tasks.isEmpty)
-        assert(scheduler.iterate().isEmpty)
+    it must "have a non empty set of tasks" in {
+      scheduler.tasks.nonEmpty shouldBe true
     }
 
-    it must "generate non-empty schedule when a set of tasks is not empty" in {
-      if (scheduler.tasks.nonEmpty)
-        assert(scheduler.iterate().nonEmpty)
+    it must "generate non-empty schedule" in {
+        scheduler.iterate().nonEmpty shouldBe true
+    }
+
+    it must "schedule jobs of the tasks" in {
+      val schJob = scheduler.iterate().dropWhile(_.forall(_.isIdle)).next().filter(!_.isIdle)(0)
+      val job = schJob.scheduledJob
+
+      schJob.isIdle shouldBe false
+      schJob.toString.isEmpty shouldBe false
+
+      scheduler.tasks.exists(t => job.isOfTask(t)) shouldBe true
     }
 
   }

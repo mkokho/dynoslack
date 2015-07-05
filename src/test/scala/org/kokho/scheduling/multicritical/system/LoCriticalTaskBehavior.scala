@@ -17,7 +17,7 @@ with PeriodicTaskBehavior {
 
     it should behave like aTask(task)
 
-    it should behave like aPeriodicTask(task.asInstanceOf[PeriodicTask])
+    it should behave like aPeriodicTask(task)
 
     it should "release jobs that are different from the jobs of the task with equal parameters" in {
       val copyTask = LoCriticalTask(task.period, task.execution, task.earlyReleases)

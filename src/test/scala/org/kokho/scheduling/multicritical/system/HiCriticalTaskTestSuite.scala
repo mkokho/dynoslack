@@ -15,7 +15,7 @@ class HiCriticalTaskTestSuite extends FlatSpec with TaskBehavior with PeriodicTa
 
   "A high critical task" should behave like aTask(hiCriticalTask)
 
-  it should behave like aPeriodicTask(hiCriticalTask.asInstanceOf[PeriodicTask])
+  it should behave like aPeriodicTask(hiCriticalTask)
 
   it should "return jobs that take low WCET" in {
     val jobs = hiCriticalTask.jobs()

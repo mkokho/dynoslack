@@ -12,9 +12,9 @@ class LoCriticalTaskTestSuite
   with LoCriticalTaskBehavior {
 
 
-  def taskWithOneEarlyRelease = LoCriticalTask(5, 1, List(4))
+  def taskWithOneEarlyRelease = LoCriticalTask("L", 5, 1, List(4))
 
-  def taskWithAnyRelease = LoCriticalTask(5, 1, List(1,2,3,4))
+  def taskWithAnyRelease = LoCriticalTask(5, 1)
 
 
   "A low critical task (with one early release point)" should behave like aLoCriticalTask(taskWithOneEarlyRelease)

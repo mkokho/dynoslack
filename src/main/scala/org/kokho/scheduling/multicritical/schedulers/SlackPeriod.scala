@@ -1,9 +1,15 @@
 package org.kokho.scheduling.multicritical.schedulers
 
 /**
+ * This class an interval of idle time on a processor
+ *
+ * Currently, a simpler version of this class is used: SlackUnit
+ * SlackUnit always has length of 1
+ *
  * @author: Mikhail Kokho
  * @date 6/30/15.
  */
+/*
 class SlackPeriod(val from: Int, val to: Int) {
   require(from <= to)
 
@@ -31,4 +37,4 @@ object SlackPeriod {
       else sum + slack.length
     )
   }
-}
+}*/
