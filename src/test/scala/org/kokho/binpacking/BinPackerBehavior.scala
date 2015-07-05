@@ -1,6 +1,5 @@
 package org.kokho.binpacking
 
-import org.kokho.scheduling.exceptions.UnpackableSetException
 import org.scalatest.FlatSpec
 
 import scala.util.Random

@@ -1,6 +1,6 @@
 package org.kokho.binpacking
 
-import org.kokho.scheduling.exceptions.UnpackableSetException
+import org.kokho.binpacking.UnpackableSetException
 
 /**
  * Created by Mikhail Kokho on 6/12/2015.

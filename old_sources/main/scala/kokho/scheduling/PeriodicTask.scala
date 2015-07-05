@@ -10,25 +10,29 @@ package org.kokho.scheduling
  *
  * The first job is released at the moment $task.offset.
  * Each subsequent job is released at the moment equal to the deadline of the previous job.
- * In other words, deadline of the task is equal to its period
  */
 trait PeriodicTask extends Task {
-  self =>
 
-  override def deadline: Int = period
+  def convertJob(job: PeriodicJob): JobType
 
   override def jobs(from: Int): Iterator[JobType] = {
-    val idx = if (from <= self.offset) {
+    val task = this
+
+    val start = if (from <= task.offset) {
       0
     } else {
       //the job is produced at the end of the current period
-      Math.ceil((from - self.offset).toDouble / period).toInt
+      Math.ceil((from - task.offset).toDouble / period).toInt
     }
 
-    val start = self.offset + idx*period
-
-    Iterator.from(start, self.period).map(buildJob)
+    Iterator.iterate(start)(_ + 1).map(
+      idx => {
+        val job = PeriodicJob(idx, task)
+        convertJob(job)
+      })
   }
-
-  def buildJob(release: Int): JobType
 }
+
+
+
+

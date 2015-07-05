@@ -1,6 +1,6 @@
 package org.kokho.scheduling
 
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util.Random
 
@@ -25,7 +25,7 @@ trait PeriodicTaskBehavior extends Matchers{
 
     it must "release next job immediately after the deadline of the last job" in {
       val jobPairs = task.jobs().take(100).sliding(2)
-      for (job :: nextJob :: Nil <- jobPairs) {
+      for (Seq(job, nextJob) <- jobPairs) {
         assert(job.deadline == nextJob.release)
       }
     }

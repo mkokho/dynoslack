@@ -1,7 +1,5 @@
 package org.kokho.binpacking
 
-import org.kokho.scheduling.exceptions.UnpackableSetException
-
 /**
  * Created with IntelliJ IDEA on 5/29/15.
  * @author: Mikhail Kokho
@@ -40,9 +38,3 @@ trait BinPacker {
     }
   }
 }
-
-object BinPacker {
-  def apply() = new FirstFitPacker()
-}
-
-

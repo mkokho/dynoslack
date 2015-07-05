@@ -1,7 +1,5 @@
 package org.kokho.binpacking
 
-import org.kokho.scheduling.exceptions.UnpackableSetException
-
 import scala.collection.mutable
 
 /**
@@ -25,11 +23,6 @@ class FirstFitPacker extends BinPacker{
     for {obj <- objects} {
       val freeBin = bins.dropWhile(freeSpace(_) < obj.weight).head
       freeBin += obj
-    }
-
-    val placedNum = bins.flatten.size
-    if (objects.size != placedNum) {
-      throw new UnpackableSetException(s"First-fit partitioning failed: not all objects has been packed")
     }
 
     bins.filter(_.nonEmpty).map(_.toSet)

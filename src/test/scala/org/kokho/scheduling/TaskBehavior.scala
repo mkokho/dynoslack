@@ -1,7 +1,6 @@
 package org.kokho.scheduling
 
-import org.kokho.scheduling.rts.multicritical.{HiCriticalTask, HiCriticalJob}
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec, Matchers}
 
 /**
  * Created with IntelliJ IDEA on 5/28/15.

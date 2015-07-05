@@ -1,8 +1,8 @@
 package org.kokho.scheduling
 
 /**
- * Created with IntelliJ IDEA on 6/4/15.
  * @author: Mikhail Kokho
+ * @date: 6/4/15
  */
 
 /**
@@ -11,13 +11,13 @@ package org.kokho.scheduling
  */
 trait JobProxy extends Job {
 
-  def job: Job
+  def proxyJob: Job
 
-  override def release: Int = job.release
+  override def release: Int = proxyJob.release
 
-  override def length: Int = job.length
+  override def length: Int = proxyJob.length
 
-  override def deadline: Int = job.deadline
+  override def deadline: Int = proxyJob.deadline
 
-  override def releasedBy: Option[Task] = job.releasedBy
+  override def releasedBy: Option[Task] = proxyJob.releasedBy
 }

@@ -8,19 +8,24 @@ package org.kokho.scheduling
 /**
  * Represents a job of a periodic task.
  *
- * A periodic task releases job at specific moments of time.
- * Therefore a job can be computed by its index.
- * A job of the same task with the same index are equal.
- *
- * @param idx - index of a job
- * @param task - task that produced this job
+ * A periodic job must be released by a periodic task.
+ * We compute all parameters of a job from the release time and the task
  */
-case class PeriodicJob(idx: Int, task: Task) extends Job {
-  def release = idx * task.period + task.offset
+trait PeriodicJob extends Job {
 
-  def deadline = release + task.period
+  /**
+   * A task that released this job
+   */
+  def task: PeriodicTask
 
-  def length = task.execution
+  /**
+   * Index of the job.
+   */
+  def index: Int = (release - task.offset) / task.period
 
-  override def releasedBy = Option(task)
+  override def length: Int = task.execution
+
+  override def deadline: Int = release + task.deadline
+
+  override def releasedBy: Option[Task] = Some(task)
 }

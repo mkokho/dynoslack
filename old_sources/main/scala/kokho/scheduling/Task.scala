@@ -32,7 +32,7 @@ trait Task {
   final def utilization: Double = execution.toDouble / deadline
 
 
-  def name: String = "T"
+  def name: String = "NoName"
 
 
   /**
