@@ -1,9 +1,8 @@
 package org.kokho.binpacking
 
-import org.kokho.binpacking.UnpackableSetException
-
 /**
- * Created by Mikhail Kokho on 6/12/2015.
+ * @author: Mikhail Kokho
+ * @date: 6/12/2015.
  */
 class WorstFitPacker extends BinPacker{
   /**
