@@ -1,8 +1,8 @@
 package org.kokho.scheduling
 
+import org.kokho.scheduling.JobStream._
 import org.kokho.scheduling.multicritical.system.HiCriticalTask
 import org.scalatest.FlatSpec
-import JobStream._
 
 /**
  * Created with IntelliJ IDEA on 6/25/15.
@@ -22,5 +22,14 @@ class JobStreamTestSuite extends FlatSpec with JobStreamBehavior{
 
   "A merged job sequence of three tasks" must behave like aNonEmptyJobStream(Seq(taskA, taskB, taskC))
 
+  "A job stream (when merged with an empty stream)" must "produce the same jobs" in {
+    val empty = JobStream.empty
+    val jobs = taskA.jobs().take(2).toList
+    val stream = toJobStream(jobs)
+
+    stream.merge(empty).produce().toList shouldEqual jobs
+    empty.merge(stream).produce().toList shouldEqual jobs
+
+  }
 
 }

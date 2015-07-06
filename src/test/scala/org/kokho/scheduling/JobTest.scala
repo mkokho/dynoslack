@@ -3,7 +3,8 @@ package org.kokho.scheduling
 import org.scalatest.{FunSuite, Matchers}
 
 /**
- * Created by Mikhail Kokho on 7/3/2015.
+ * @author: Mikhail Kokho
+ * @date: 7/3/2015
  */
 class JobTest extends FunSuite with Matchers{
   val job = Job(0, 2, 10)
@@ -13,6 +14,7 @@ class JobTest extends FunSuite with Matchers{
     job.length shouldEqual 2
     job.deadline shouldEqual 10
     job.releasedBy.isEmpty shouldBe true
+    job.toString.nonEmpty shouldBe true
   }
 
   test("JobProxy is correct") {

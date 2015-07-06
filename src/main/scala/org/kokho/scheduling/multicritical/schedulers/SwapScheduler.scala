@@ -12,7 +12,16 @@ class SwapScheduler (override val partition: Seq[Seq[MulticriticalTask]]) extend
   /**
    * Infinite iterator over a sequence of scheduled jobs
    */
-  override def iterate(): Iterator[Seq[ScheduledJob]] = {
-    ???
+  override def iterate(): Iterator[Seq[ScheduledJob]] = new Iterator[Seq[ScheduledJob]] {
+
+    val schedulingWorkers = self.partition.map(new MulticriticalWorker(_))
+
+    override def hasNext: Boolean = true
+
+    override def next(): Seq[ScheduledJob] = {
+//      schedulingWorkers.foreach(_.releaseLocally())
+      val jobs = schedulingWorkers.map(_.next())
+      jobs
+    }
   }
 }

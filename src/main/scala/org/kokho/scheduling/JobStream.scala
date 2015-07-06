@@ -52,8 +52,8 @@ trait JobStream {
   def insert(job: Job): JobStream = merge(job)
 
 
-  private def mergeJobs(xs: BufferedIterator[Job], ys: BufferedIterator[Job]): Iterator[Job] = new Iterator[Job] {
-    override def hasNext: Boolean = xs.nonEmpty && ys.nonEmpty
+  private def mergeJobs(xs: BufferedIterator[Job], ys: BufferedIterator[Job]) = new Iterator[Job] {
+    override def hasNext: Boolean = xs.nonEmpty || ys.nonEmpty
 
     override def next(): Job = {
       if (xs.isEmpty) ys.next()

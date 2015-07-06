@@ -1,7 +1,6 @@
 package org.kokho.scheduling.multicritical.schedulers
 
 import org.kokho.scheduling.multicritical.system.{HiCriticalTask, LoCriticalTask}
-import org.kokho.scheduling.{SchedulerAnalyzer, Job, ScheduledJob}
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
@@ -11,8 +10,6 @@ import org.scalatest.{FlatSpec, Matchers}
 class SwapSchedulerTestSuite extends FlatSpec
 with Matchers
 with MulticriticalSchedulerBehavior {
-
-  def lowJobs = Set(0)
 
   val loTask = LoCriticalTask(12, 4, List(5))
   val taskA = HiCriticalTask("A", 12, 1, 3, lowJobs)
@@ -25,12 +22,15 @@ with MulticriticalSchedulerBehavior {
     Seq(HiCriticalTask("D", 9, 7, 7))
     )
 
+  def lowJobs = Set(0)
+
   override def toScheduler(tasks: Partition): MulticriticalScheduler = new SwapScheduler(tasks)
-/*
+
   behavior of "A Swap Schedule"
 
-//  it should behave like aMulticriticalSchedule(swapSet)
+  it should behave like aMulticriticalScheduler(swapSet)
 
+  /*
   it should "release jobs locally and globally" in {
     val myLoTask = LoCriticalTask(6, 2, List(2, 4))
     val simple2coreSet = (

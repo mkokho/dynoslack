@@ -1,8 +1,8 @@
 package org.kokho.scheduling
 
 import org.kokho.scheduling.multicritical.schedulers.SchedulerWithLocalER
-import org.kokho.scheduling.multicritical.system.{LoCriticalTask, HiCriticalTask}
-import org.scalatest.{Matchers, FunSuite}
+import org.kokho.scheduling.multicritical.system.{HiCriticalTask, LoCriticalTask}
+import org.scalatest.{FunSuite, Matchers}
 
 /**
  * @author: Mikhail Kokho
@@ -19,6 +19,13 @@ class SchedulerAnalyzerTests extends FunSuite with Matchers{
 
   test("find jobs released by a task") {
     analyzer.findJobs(taskA).forall(_.scheduledJob.isOfTask(taskA)) shouldBe true
+  }
+
+  test("throwns an exception when asked for jobs of a task that is not in the scheduler") {
+    intercept[IllegalArgumentException] {
+      val otherTask = HiCriticalTask(10,3,3)
+      analyzer.findJobs(otherTask)
+    }
   }
 
   test("merges scheduled jobs") {

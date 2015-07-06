@@ -33,15 +33,18 @@ class SchedulerAnalyzer(val scheduler: Scheduler, val until: Int = 30) {
 
     val jobs = findJobs(loTask).map(_.scheduledJob)
 
-    if (jobs.size <= 1) 0
-    else jobs.sliding(2).count(hasDifferentParents)
+    jobs.sliding(2).count(hasDifferentParents)
   }
 
   def findJobs(task: Task): Seq[ScheduledJob] = {
-    def fiterAndMerge(seq: Seq[ScheduledJob]) = mergeScheduledJobs(seq.filter(_.scheduledJob.isOfTask(task)))
+    require(scheduler.tasks.contains(task), s"There is no task $task in the schedule")
 
-    require(scheduler.tasks.contains(task), "There is no such task in the schedule")
-    coreToJobs.map(fiterAndMerge).flatten.sortBy(_.from)
+    val allJobsOfTheTask = coreToJobs
+      .flatten
+      .filter(_.scheduledJob.isOfTask(task))
+
+    //make schedule more compact
+    mergeScheduledJobs(allJobsOfTheTask).sortBy(_.from)
   }
   
   /**
