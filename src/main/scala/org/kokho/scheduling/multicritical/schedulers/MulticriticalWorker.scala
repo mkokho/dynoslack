@@ -1,7 +1,7 @@
 package org.kokho.scheduling.multicritical.schedulers
 
 import org.kokho.scheduling.JobStream._
-import org.kokho.scheduling.multicritical.system.{HiCriticalJob, LoCriticalJob, LoCriticalTask, MulticriticalTask}
+import org.kokho.scheduling.multicritical.system.{LoCriticalTask, MulticriticalTask}
 import org.kokho.scheduling.{Job, ScheduledJob, Task}
 
 /**
@@ -10,21 +10,7 @@ import org.kokho.scheduling.{Job, ScheduledJob, Task}
  * @author: Mikhail Kokho
  * @date 7/2/15.
  */
-class MulticriticalWorker(private var tasks: Seq[MulticriticalTask]) {
-
-  implicit def edfOrdering: Ordering[Job] = new Ordering[Job] {
-    override def compare(x: Job, y: Job): Int = {
-      val res = x.deadline - y.deadline
-      if (res == 0) {
-        (x, y) match {
-          case (_: LoCriticalJob, _: HiCriticalJob) => 1
-          case (_: HiCriticalJob, _: LoCriticalJob) => -1
-          case _ => 0
-        }
-      } else
-        res
-    }
-  }
+class MulticriticalWorker(private var tasks: Seq[MulticriticalTask]) extends EdfHiFirstOrdering{
 
   private var schedule: FunSchedule = FunSchedule(tasks)
 
