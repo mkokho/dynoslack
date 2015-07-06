@@ -20,6 +20,6 @@ lazy val master = (project in file(".")).
   settings(commonSettings: _*).
   settings(
     name := "Scheduling of Multicritical Real-Time Systems",
-    libraryDependencies ++= testLibraries,
-    libraryDependencies ++= logging
+//    libraryDependencies ++= logging,
+    libraryDependencies ++= testLibraries
   )
