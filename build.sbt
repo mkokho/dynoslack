@@ -4,10 +4,11 @@ val junit       = "com.novocode" % "junit-interface" % "0.11" % "test"
 
 val slf4jApi    = "org.slf4j" % "slf4j-api" % "1.7.5"
 val slf4jBind   = "org.slf4j" % "slf4j-log4j12" % "1.7.12"
+val slf4jSimple = "org.slf4j" % "slf4j-simple" % "1.6.4"
 val log4j       = "log4j" % "log4j" % "1.2.14"
 
 val testLibraries = Seq(scalatest, scalacheck, junit)
-val logging = Seq(slf4jApi, slf4jBind, log4j)
+val logging = Seq(slf4jApi, slf4jBind, slf4jSimple)
 
 lazy val commonSettings = Seq(
   organization := "org.kokho",
