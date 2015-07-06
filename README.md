@@ -1,4 +1,4 @@
-Scheduling Algorithms ![build status](https://travis-ci.org/mkokho/dynoslack.svg?branch=master)
+Scheduling Algorithms [![Build Status](https://travis-ci.org/mkokho/dynoslack.svg?branch=master)](https://travis-ci.org/mkokho/dynoslack)  [![Coverage Status](https://coveralls.io/repos/mkokho/dynoslack/badge.svg)](https://coveralls.io/r/mkokho/dynoslack)
 =====================
 
 This project implements several scheduling algorithms related to theoretical research in scheduling theory.
