@@ -1,10 +1,11 @@
-import java.util.concurrent.{TimeUnit, Executors}
+package org.kokho
+
+import java.util.concurrent.{Executors, TimeUnit}
 
 import org.scalatest.FunSuite
 
 import scala.concurrent.duration._
-import scala.concurrent.{Promise, Future, Await}
-import scala.util.Random
+import scala.concurrent.{Await, Future, Promise}
 
 /**
  * @author: Mikhail Kokho
