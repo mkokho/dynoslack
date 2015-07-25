@@ -29,7 +29,7 @@ class ThreadOverflowTest extends FunSuite{
 
     def task(id: Int) = new Runnable {
       override def run(): Unit = {
-        Thread.sleep(blockTime.toMillis)
+//        Thread.sleep(blockTime.toMillis)
       }
     }
 
