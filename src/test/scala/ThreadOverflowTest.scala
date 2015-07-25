@@ -44,8 +44,8 @@ class ThreadOverflowTest extends FunSuite{
     }
   }
 
-  test("Thread overflow. Size: 10"){
-    threadOverflow(10)
+  test("Thread overflow. Size: 1"){
+//    threadOverflow(1)
   }
 
 /*  test("Thread overflow. Size: 1000"){
