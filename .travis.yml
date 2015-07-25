@@ -4,7 +4,7 @@ scala:
 jdk:
     - oraclejdk8
 script:
-  - "test"
+    - test
 # wait for update on sbt-coveralls plugin
 #    - "sbt clean coverage test"
 #after_success:
