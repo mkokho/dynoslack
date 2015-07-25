@@ -4,7 +4,7 @@ scala:
 jdk:
     - oraclejdk8
 script:
-  - "sbt testOnly ThreadOverflowTest"
+  - 'sbt testOnly ThreadOverflowTest'
 # wait for update on sbt-coveralls plugin
 #    - "sbt clean coverage test"
 #after_success:
